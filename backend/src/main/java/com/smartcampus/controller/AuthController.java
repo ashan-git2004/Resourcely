@@ -1,3 +1,5 @@
+
+//added auth controller to handle user registration and login requests. The controller has two endpoints: /register for user registration and /login for user authentication. Both endpoints accept JSON payloads and return an AuthResponse containing the JWT token and user information upon successful authentication or registration. The controller uses the AuthService to perform the actual business logic for registration and login.
 package com.smartcampus.controller;
 
 import com.smartcampus.dto.request.LoginRequest;
