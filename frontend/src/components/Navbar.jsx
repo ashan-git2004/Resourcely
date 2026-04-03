@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "../features/notifications/NotificationBell";
 
 export default function Navbar() {
   const { isAuthenticated, auth, logout } = useAuth();
@@ -30,6 +31,8 @@ export default function Navbar() {
                 Admin
               </NavLink>
             )}
+            <NavLink to="/technician/tickets" className="nav-link">My Tickets</NavLink>
+            <NotificationBell />
             <span className="user-pill">{auth?.email}</span>
             <button type="button" className="ghost-btn" onClick={logout}>
               Logout

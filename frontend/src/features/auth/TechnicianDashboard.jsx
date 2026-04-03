@@ -21,12 +21,18 @@ export default function TechnicianDashboard() {
         </div>
       </div>
 
-      <h2 style={{ marginTop: "1.5rem" }}>Available Actions</h2>
+      <h2 style={{ marginTop: "1.5rem" }}>Quick Access</h2>
+      <div style={{ display: "grid", gap: "1rem" }}>
+        <Link to="/technician/tickets" className="primary-btn">View My Assigned Tickets</Link>
+        <Link to="/notifications" className="ghost-btn">View All Notifications</Link>
+      </div>
+
+      <h2 style={{ marginTop: "1.5rem" }}>Service Guidelines</h2>
       <ul style={{ lineHeight: "1.8" }}>
-        <li>Monitor system status and alerts</li>
-        <li>Manage maintenance requests</li>
-        <li>Update infrastructure logs</li>
-        <li>Report technical issues</li>
+        <li>Tickets should be moved to IN_PROGRESS upon first action.</li>
+        <li>Ensure resolution notes are detailed before closing.</li>
+        <li>SLA targets are monitored for first-response and resolution.</li>
+        <li>Keep stakeholders updated via ticket comments.</li>
       </ul>
 
       <p className="muted" style={{ marginTop: "1rem" }}>

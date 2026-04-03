@@ -9,6 +9,9 @@ import OAuth2RedirectPage from "../features/auth/OAuth2RedirectPage";
 import RegisterPage from "../features/auth/RegisterPage";
 import StudentDashboard from "../features/auth/StudentDashboard";
 import TechnicianDashboard from "../features/auth/TechnicianDashboard";
+import NotificationsPage from "../features/notifications/NotificationsPage";
+import TechnicianTicketsPage from "../features/tickets/TechnicianTicketsPage";
+import TicketDetailPage from "../features/tickets/TicketDetailPage";
 import ProtectedRoute from "./ProtectedRoute";
 
 function HomeGate() {
@@ -80,6 +83,30 @@ export default function AppRouter() {
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/technician/tickets"
+            element={
+              <ProtectedRoute allowedRoles={["TECHNICIAN", "MANAGER", "ADMIN"]}>
+                <TechnicianTicketsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets/:ticketId"
+            element={
+              <ProtectedRoute allowedRoles={["TECHNICIAN", "MANAGER", "ADMIN", "USER"]}>
+                <TicketDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />
