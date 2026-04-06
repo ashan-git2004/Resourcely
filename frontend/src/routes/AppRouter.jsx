@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 import AdminUsersPage from "../features/admin/AdminUsersPage";
@@ -21,26 +21,39 @@ function HomeGate() {
 
 export default function AppRouter() {
   const { auth } = useAuth();
+  const location = useLocation();
   const roles = auth?.roles || [];
 
+  // Check if current route is technician hub
+  const isTechnicianHub =
+    location.pathname === "/dashboard/technician" ||
+    location.pathname === "/technician/tickets";
+
   // Role-specific home routes
+  // Specialized Priority Redirection
   function RoleBasedDashboard() {
+    // 1st Priority: Functional Technician Hub (Core assigned work)
+    if (roles.includes("TECHNICIAN")) {
+      return <Navigate to="/dashboard/technician" replace />;
+    }
+    // 2nd Priority: Management and Approval
     if (roles.includes("ADMIN")) {
       return <Navigate to="/admin/users" replace />;
     }
     if (roles.includes("MANAGER")) {
       return <Navigate to="/dashboard/manager" replace />;
     }
-    if (roles.includes("TECHNICIAN")) {
-      return <Navigate to="/dashboard/technician" replace />;
+    if (roles.includes("USER")) {
+      return <Navigate to="/dashboard/student" replace />;
     }
+    // Fallback for pending accounts
     return <DashboardPage />;
   }
 
   return (
     <>
       <Navbar />
-      <main className="layout">
+      <main className={isTechnicianHub ? "" : "layout"}>
         <Routes>
           <Route path="/" element={<HomeGate />} />
           <Route path="/login" element={<LoginPage />} />
@@ -97,7 +110,9 @@ export default function AppRouter() {
           <Route
             path="/tickets/:ticketId"
             element={
-              <ProtectedRoute allowedRoles={["TECHNICIAN", "MANAGER", "ADMIN", "USER"]}>
+              <ProtectedRoute
+                allowedRoles={["TECHNICIAN", "MANAGER", "ADMIN", "USER"]}
+              >
                 <TicketDetailPage />
               </ProtectedRoute>
             }

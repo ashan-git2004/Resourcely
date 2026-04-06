@@ -26,13 +26,20 @@ export default function Navbar() {
 
         {isAuthenticated && (
           <>
-            {isAdmin && (
+            {auth.roles.includes("ADMIN") && (
               <NavLink to="/admin/users" className="nav-link">
-                Admin
+                Admin Panel
               </NavLink>
             )}
-            <NavLink to="/technician/tickets" className="nav-link">My Tickets</NavLink>
-            <NotificationBell />
+            {auth.roles.includes("TECHNICIAN") && (
+              <>
+                <NavLink to="/dashboard/technician" className="nav-link">
+                  Technician Hub
+                </NavLink>
+                <NotificationBell />
+              </>
+            )}
+            {!auth.roles.includes("TECHNICIAN") && <NotificationBell />}
             <span className="user-pill">{auth?.email}</span>
             <button type="button" className="ghost-btn" onClick={logout}>
               Logout
