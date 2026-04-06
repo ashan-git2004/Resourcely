@@ -1,9 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap");
 
 :root {
-  --bg: #f3f1e7;
-  --panel: #fff8de;
-  --ink: #1f1a10;
+  --bg: #fdfaf3;
+  --panel: #ffffff;
+  --ink: #1a1a1a;
   --accent: #005c53;
   --accent-2: #ea5b0c;
   --border: #d7cdaa;
