@@ -80,7 +80,7 @@ export function rejectUser(userId, token) {
 }
 
 export function buildGoogleLoginUrl() {
-  return `${API_BASE_URL}/oauth2/authorization/google`;
+  return "/oauth2/authorization/google";
 }
 
 export function decodeRolesFromToken(token) {
