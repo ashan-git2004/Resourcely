@@ -110,3 +110,49 @@ export function checkConflicts(resourceId, startTime, endTime, token) {
     { token }
   );
 }
+
+// User Booking API calls
+/**
+ * Create a new booking request.
+ * Automatically checks for scheduling conflicts.
+ * @throws Will throw error if conflicts exist or validation fails
+ */
+export function createBooking(booking, token) {
+  return request("POST", "/api/user/bookings", {
+    payload: booking,
+    token,
+  });
+}
+
+/**
+ * Get all bookings for the current user.
+ */
+export function getUserBookings(token) {
+  return request("GET", "/api/user/bookings", { token });
+}
+
+/**
+ * Get a specific booking (user must own it).
+ */
+export function getUserBooking(bookingId, token) {
+  return request("GET", `/api/user/bookings/${bookingId}`, { token });
+}
+
+/**
+ * Cancel an approved booking.
+ * Only users can cancel their own approved bookings.
+ */
+export function cancelUserBooking(bookingId, token) {
+  return request("PATCH", `/api/user/bookings/${bookingId}/cancel`, { token });
+}
+
+/**
+ * Check for booking conflicts for a resource during a specific time period.
+ * Useful for users to check availability before creating a booking.
+ */
+export function checkBookingConflicts(resourceId, startTime, endTime, token) {
+  return request("GET", 
+    `/api/user/bookings/check-conflicts?resourceId=${resourceId}&startTime=${startTime}&endTime=${endTime}`, 
+    { token }
+  );
+}

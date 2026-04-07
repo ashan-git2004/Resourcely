@@ -6,6 +6,7 @@ import {
   approveBooking,
   rejectBooking,
   adminCancelBooking,
+  checkConflicts,
 } from "./bookingService";
 import { useAuth } from "../../context/AuthContext";
 
@@ -19,7 +20,8 @@ export default function AdminBookingsPage() {
   // Filters
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [busyBookingId, setBusyBookingId] = useState("");
-  const [actionModal, setActionModal] = useState(null); // { bookingId, action, reason }
+  const [actionModal, setActionModal] = useState(null); // { bookingId, action, reason, conflicts }
+  const [checkedConflicts, setCheckedConflicts] = useState(false);
 
   const bookingStatuses = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"];
 
@@ -93,7 +95,29 @@ export default function AdminBookingsPage() {
   }
 
   function openActionModal(bookingId, action) {
-    setActionModal({ bookingId, action, reason: "" });
+    const booking = bookings.find((b) => b.id === bookingId);
+    setActionModal({ bookingId, action, reason: "", conflicts: [] });
+    setCheckedConflicts(false);
+
+    // If approving, check for conflicts
+    if (action === "approve" && booking) {
+      setBusyBookingId(bookingId);
+      checkConflicts(booking.resourceId, booking.startTime, booking.endTime, auth?.token)
+        .then((conflicts) => {
+          setActionModal((prev) => ({
+            ...prev,
+            conflicts: conflicts || [],
+          }));
+          setCheckedConflicts(true);
+        })
+        .catch((err) => {
+          console.error("Error checking conflicts:", err);
+          setCheckedConflicts(true);
+        })
+        .finally(() => {
+          setBusyBookingId("");
+        });
+    }
   }
 
   function closeActionModal() {
@@ -254,6 +278,53 @@ export default function AdminBookingsPage() {
               {actionModal.action === "cancel" && "Cancel Booking"}
             </h2>
 
+            {/* Conflict Warning for Approval */}
+            {actionModal.action === "approve" && checkedConflicts && actionModal.conflicts && actionModal.conflicts.length > 0 && (
+              <div
+                style={{
+                  backgroundColor: "#fff3cd",
+                  border: "1px solid #ffc107",
+                  borderRadius: "4px",
+                  padding: "1rem",
+                  marginBottom: "1rem",
+                }}
+              >
+                <strong style={{ color: "#856404" }}>⚠️ Conflict Warning</strong>
+                <p style={{ margin: "0.5rem 0 0 0", color: "#856404" }}>
+                  This booking conflicts with {actionModal.conflicts.length} approved booking(s):
+                </p>
+                <ul style={{ margin: "0.5rem 0 0 1.5rem", color: "#856404" }}>
+                  {actionModal.conflicts.map((conflict) => (
+                    <li key={conflict.id}>
+                      <strong>{conflict.resourceName}</strong> - {formatDateTime(conflict.startTime)} to {formatDateTime(conflict.endTime)}
+                    </li>
+                  ))}
+                </ul>
+                <p style={{ margin: "0.5rem 0 0 0", color: "#856404", fontSize: "0.9rem" }}>
+                  <strong>Action:</strong> Please reject this booking or have the user reschedule.
+                </p>
+              </div>
+            )}
+
+            {actionModal.action === "approve" && checkedConflicts && (!actionModal.conflicts || actionModal.conflicts.length === 0) && (
+              <div
+                style={{
+                  backgroundColor: "#d4edda",
+                  border: "1px solid #28a745",
+                  borderRadius: "4px",
+                  padding: "0.75rem",
+                  marginBottom: "1rem",
+                  color: "#155724",
+                }}
+              >
+                ✓ No conflicts detected. Safe to approve.
+              </div>
+            )}
+
+            {actionModal.action === "approve" && !checkedConflicts && (
+              <p style={{ color: "#6c757d", marginBottom: "1rem" }}>Checking for conflicts...</p>
+            )}
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -291,7 +362,7 @@ export default function AdminBookingsPage() {
                 <button
                   type="submit"
                   className="primary-btn"
-                  disabled={busyBookingId !== ""}
+                  disabled={busyBookingId !== "" || (actionModal.action === "approve" && !checkedConflicts)}
                   style={{ flex: 1, width: "auto" }}
                 >
                   {busyBookingId ? "Processing..." : "Confirm"}

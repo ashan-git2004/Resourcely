@@ -19,8 +19,10 @@ public interface BookingRepository extends MongoRepository<Booking, String> {
 
     List<Booking> findByStatusAndUserId(BookingStatus status, String userId);
 
-    List<Booking> findByStartTimeGreaterThanAndEndTimeLessThanAndResourceId(
-            Instant startTime, Instant endTime, String resourceId);
+    // Find bookings that overlap with the given time range for a resource
+    // Uses MongoDB query to find overlapping time ranges: startTime < requestedEndTime AND endTime > requestedStartTime
+    List<Booking> findByResourceIdAndStartTimeBeforeAndEndTimeAfter(
+            String resourceId, Instant endTime, Instant startTime);
 
     // Find bookings within a date range
     List<Booking> findByStartTimeGreaterThanEqual(Instant startTime);

@@ -1,4 +1,5 @@
-package com.smartcampus.config;
+package 
+com.smartcampus.config;
 
 import com.smartcampus.security.jwt.JwtAuthFilter;
 import com.smartcampus.security.oauth2.CustomOAuth2UserService;

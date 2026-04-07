@@ -23,6 +23,7 @@ public class BookingService {
 
     /**
      * Create a new booking request.
+     * Validates time constraints and checks for scheduling conflicts.
      */
     public Booking createBooking(Booking booking) {
         if (booking.getStartTime() == null || booking.getEndTime() == null) {
@@ -31,6 +32,15 @@ public class BookingService {
         if (booking.getStartTime().isAfter(booking.getEndTime())) {
             throw new BadRequestException("Start time must be before end time");
         }
+
+        // Check for conflicts with approved bookings
+        List<Booking> conflicts = checkConflicts(booking.getResourceId(), booking.getStartTime(), booking.getEndTime());
+        if (!conflicts.isEmpty()) {
+            throw new BadRequestException(
+                    "Resource is not available during the requested time period. "
+                    + conflicts.size() + " conflicting booking(s) found.");
+        }
+
         booking.setStatus(BookingStatus.PENDING);
         booking.setCreatedAt(Instant.now());
         booking.setUpdatedAt(Instant.now());
@@ -117,12 +127,23 @@ public class BookingService {
 
     /**
      * Admin approves a booking request.
+     * Checks for scheduling conflicts with other approved bookings before approval.
+     * Important: Two pending requests might conflict once approved, so we validate against approved bookings.
      */
     public Booking approveBooking(String bookingId, String adminId, String adminReason) {
         Booking booking = getBooking(bookingId);
 
         if (!booking.getStatus().equals(BookingStatus.PENDING)) {
             throw new BadRequestException("Only pending bookings can be approved");
+        }
+
+        // Check for conflicts with already-approved bookings
+        // This prevents approving a booking that would conflict with an already-approved one
+        List<Booking> conflicts = checkConflicts(booking.getResourceId(), booking.getStartTime(), booking.getEndTime());
+        if (!conflicts.isEmpty()) {
+            throw new BadRequestException(
+                    "Cannot approve: resource has conflicting approved booking(s). "
+                    + "Please reject this request or reschedule it.");
         }
 
         booking.setStatus(BookingStatus.APPROVED);
@@ -176,11 +197,19 @@ public class BookingService {
     }
 
     /**
-     * Check for time conflicts: Find if resource is booked during timeframe.
+     * Check for booking conflicts: Find if resource has approved bookings during the given time period.
+     * 
+     * Two time ranges overlap if: range1.start < range2.end AND range1.end > range2.start
+     * 
+     * @param resourceId the resource to check
+     * @param startTime the requested start time
+     * @param endTime the requested end time
+     * @return list of approved bookings that conflict with the time period
      */
     public List<Booking> checkConflicts(String resourceId, Instant startTime, Instant endTime) {
+        // Query: Find all bookings for this resource where startTime < requestedEndTime AND endTime > requestedStartTime
         return bookingRepository
-                .findByStartTimeGreaterThanAndEndTimeLessThanAndResourceId(startTime, endTime, resourceId)
+                .findByResourceIdAndStartTimeBeforeAndEndTimeAfter(resourceId, endTime, startTime)
                 .stream()
                 .filter(b -> b.getStatus().equals(BookingStatus.APPROVED))
                 .collect(Collectors.toList());
