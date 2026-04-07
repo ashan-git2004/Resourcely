@@ -1,5 +1,3 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
 async function request(method, path, { payload, token } = {}) {
   const headers = {};
   if (payload !== undefined) {
@@ -9,7 +7,8 @@ async function request(method, path, { payload, token } = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  // Use relative path for Vite proxy to work
+  const response = await fetch(path, {
     method,
     headers,
     body: payload !== undefined ? JSON.stringify(payload) : undefined,
