@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { getTicketComments, addComment, updateComment, deleteComment } from "./ticketService";
+import { addComment, deleteComment, getTicketComments, updateComment } from "./ticketService";
 
 export default function TicketComments({ ticketId }) {
   const { auth } = useAuth();
@@ -21,6 +21,7 @@ export default function TicketComments({ ticketId }) {
       setLoading(true);
       const data = await getTicketComments(ticketId, auth.token);
       setComments(data);
+      setError("");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -60,7 +61,7 @@ export default function TicketComments({ ticketId }) {
   }
 
   async function handleDeleteComment(commentId) {
-    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+    if (!window.confirm("Delete this comment?")) return;
     try {
       setError("");
       await deleteComment(ticketId, commentId, auth.token);
@@ -71,88 +72,73 @@ export default function TicketComments({ ticketId }) {
   }
 
   return (
-    <section className="card" style={{ padding: "1.5rem" }}>
-      <h2>Comments</h2>
-      {error && <div className="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
+    <section className="card">
+      <h2 style={{ marginTop: 0 }}>Comments</h2>
+      {error && <div className="alert" style={{ marginBottom: "0.8rem" }}>{error}</div>}
 
-      <div style={{ display: "grid", gap: "0.75rem", marginBottom: "1.5rem" }}>
-        <textarea 
-          style={{ 
-            width: "100%", 
-            minHeight: "80px", 
-            padding: "0.75rem", 
-            border: "1px solid #baa97e", 
-            borderRadius: "8px", 
-            font: "inherit" 
-          }}
+      <div className="form-grid" style={{ marginBottom: "1rem" }}>
+        <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Add a comment or update note..."
+          placeholder="Add a comment or progress note"
           disabled={submitting}
+          rows={3}
         />
-        <button 
-          onClick={handleAddComment} 
-          disabled={submitting || !newComment.trim()} 
-          className="primary-btn"
-        >
-          {submitting ? "Posting..." : "Post Comment"}
+        <button onClick={handleAddComment} disabled={submitting || !newComment.trim()} className="primary-btn">
+          {submitting ? "Posting..." : "Post comment"}
         </button>
       </div>
 
       <div className="comments-list">
         {loading ? (
-          <p>Loading comments...</p>
+          <p className="muted">Loading comments...</p>
         ) : comments.length === 0 ? (
           <p className="muted">No comments yet.</p>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className={`comment-item ${comment.author?.email === auth?.email ? "comment-mine" : ""}`}>
+            <div
+              key={comment.id}
+              className={`comment-item ${comment.author?.email === auth?.email ? "comment-mine" : ""}`}
+            >
               <div className="comment-header">
                 <span className="comment-author">
                   {comment.author?.email} {comment.author?.email === auth?.email && "(You)"}
                 </span>
-                <span className="comment-date">
-                  {new Date(comment.createdAt).toLocaleString()}
-                </span>
+                <span className="comment-date">{new Date(comment.createdAt).toLocaleString()}</span>
               </div>
 
               {editingCommentId === comment.id ? (
-                <div style={{ display: "grid", gap: "0.5rem" }}>
-                  <textarea 
+                <div className="form-grid">
+                  <textarea
                     autoFocus
-                    style={{ 
-                      width: "100%", 
-                      padding: "0.5rem", 
-                      border: "1px solid var(--accent)", 
-                      borderRadius: "6px", 
-                      font: "inherit" 
-                    }}
                     value={editingContent}
                     onChange={(e) => setEditingContent(e.target.value)}
+                    rows={3}
                   />
                   <div className="comment-actions">
-                    <button onClick={handleUpdateComment} className="action-link" disabled={submitting}>Save</button>
-                    <button onClick={() => setEditingCommentId(null)} className="action-link" disabled={submitting}>Cancel</button>
+                    <button onClick={handleUpdateComment} className="action-link" disabled={submitting}>
+                      Save
+                    </button>
+                    <button onClick={() => setEditingCommentId(null)} className="action-link" disabled={submitting}>
+                      Cancel
+                    </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="comment-content">{comment.content}</div>
+                  <div>{comment.content}</div>
                   {comment.author?.email === auth?.email && (
                     <div className="comment-actions">
-                      <button 
+                      <button
                         onClick={() => {
                           setEditingCommentId(comment.id);
                           setEditingContent(comment.content);
-                        }} 
+                        }}
                         className="action-link"
                       >
                         Edit
                       </button>
-                      <button 
-                        onClick={() => handleDeleteComment(comment.id)} 
-                        className="action-link action-link-danger"
-                      >
+                      <button onClick={() => handleDeleteComment(comment.id)} className="action-link action-link-danger">
                         Delete
                       </button>
                     </div>

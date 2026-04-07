@@ -38,10 +38,10 @@ export default function RegisterPage() {
         password: form.password,
       });
       setSuccess(
-        "✓ Account created successfully! An admin will review your application and grant you access. Check back soon."
+        "Account created successfully. An administrator will review your request and assign access permissions."
       );
       setForm(initialForm);
-      setTimeout(() => navigate("/login", { replace: true }), 2000);
+      setTimeout(() => navigate("/login", { replace: true }), 1800);
     } catch (submitError) {
       setError(submitError.message);
     } finally {
@@ -52,76 +52,69 @@ export default function RegisterPage() {
   return (
     <div className="auth-layout">
       <div className="card">
-        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <h1 className="brand" style={{ fontSize: "2.2rem", marginBottom: "0.5rem" }}>Create Account</h1>
-          <p className="muted">Join the Smart Campus operations portal</p>
+        <div className="auth-title-block">
+          <h1>Create Your Account</h1>
+          <p className="muted">Join the university operations platform.</p>
         </div>
 
-        {error && <div className="alert show" style={{ marginBottom: "1.5rem" }}>{error}</div>}
-        {success && <div className="alert success show" style={{ marginBottom: "1.5rem" }}>{success}</div>}
+        {error && <div className="alert">{error}</div>}
+        {success && <div className="success">{success}</div>}
 
-      <form onSubmit={handleSubmit} className="form-grid">
-        <label htmlFor="register-email">Email Address</label>
-        <input
-          id="register-email"
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-          placeholder="your@email.com"
-          required
-        />
+        <form onSubmit={handleSubmit} className="form-grid">
+          <label htmlFor="register-email">Email</label>
+          <input
+            id="register-email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+            placeholder="your.email@university.edu"
+            required
+          />
 
-        <label htmlFor="register-password">Password</label>
-        <input
-          id="register-password"
-          type="password"
-          minLength={6}
-          value={form.password}
-          onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-          placeholder="At least 6 characters"
-          required
-        />
+          <label htmlFor="register-password">Password</label>
+          <input
+            id="register-password"
+            type="password"
+            minLength={6}
+            value={form.password}
+            onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+            placeholder="At least 6 characters"
+            required
+          />
 
-        <label htmlFor="register-confirm-password">Confirm Password</label>
-        <input
-          id="register-confirm-password"
-          type="password"
-          minLength={6}
-          value={form.confirmPassword}
-          onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-          placeholder="Re-enter password"
-          required
-        />
+          <label htmlFor="register-confirm-password">Confirm password</label>
+          <input
+            id="register-confirm-password"
+            type="password"
+            minLength={6}
+            value={form.confirmPassword}
+            onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+            placeholder="Re-enter password"
+            required
+          />
 
-        <button type="submit" className="primary-btn" disabled={loading}>
-          {loading ? "Creating account..." : "Create Account"}
-        </button>
-      </form>
+          <button type="submit" className="primary-btn" disabled={loading}>
+            {loading ? "Creating account..." : "Create account"}
+          </button>
+        </form>
 
-      <a href={buildGoogleLoginUrl()} className="secondary-btn">
-        Sign Up with Google
-      </a>
+        <a href={buildGoogleLoginUrl()} className="google-btn auth-oauth-btn" style={{ marginTop: "0.5rem" }}>
+          <span className="google-mark" aria-hidden="true">G</span>
+          Sign up with Google
+        </a>
 
-      <p className="muted" style={{ marginTop: "1rem" }}>
-        Already have an account? <Link to="/login">Sign in</Link>
-      </p>
+        <p className="muted" style={{ marginTop: "0.9rem" }}>
+          Already have an account? <Link to="/login" className="text-link">Sign in</Link>
+        </p>
 
-      <div
-        style={{
-          marginTop: "1.5rem",
-          padding: "0.8rem",
-          backgroundColor: "#f0f4ff",
-          borderRadius: "8px",
-        }}
-      >
-        <strong style={{ fontSize: "0.9rem", color: "#0066cc" }}>📋 Registration Process:</strong>
-        <ol style={{ fontSize: "0.85rem", lineHeight: "1.7", marginTop: "0.5rem", marginBottom: 0 }}>
-          <li>Complete your registration with email & password or Google account</li>
-          <li>Wait for admin review and role assignment</li>
-          <li>Once approved, you'll have access to resources based on your role</li>
-          <li>Login anytime using your chosen authentication method</li>
-        </ol>
-      </div>
+        <div className="auth-help">
+          <strong>Registration Flow</strong>
+          <ol style={{ margin: 0, paddingLeft: "1.1rem" }}>
+            <li>Register using email/password or Google.</li>
+            <li>Wait for admin review and role assignment.</li>
+            <li>Sign in to access role-specific operations tools.</li>
+          </ol>
+        </div>
       </div>
     </div>
   );

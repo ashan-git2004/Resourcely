@@ -32,129 +32,94 @@ export default function TechnicianDashboard() {
     }
   }
 
-  // Calculate statistics
   const openCount = tickets.filter((t) => t.status === "OPEN").length;
-  const inProgressCount = tickets.filter(
-    (t) => t.status === "IN_PROGRESS",
-  ).length;
+  const inProgressCount = tickets.filter((t) => t.status === "IN_PROGRESS").length;
   const urgentCount = tickets.filter((t) => t.priority === "URGENT").length;
   const completionRate =
     tickets.length > 0
       ? Math.round(
-          (tickets.filter(
-            (t) => t.status === "CLOSED" || t.status === "RESOLVED",
-          ).length /
+          (tickets.filter((t) => t.status === "CLOSED" || t.status === "RESOLVED").length /
             tickets.length) *
-            100,
+            100
         )
       : 0;
 
-  // Filter tickets based on search query
   const filteredTickets = tickets.filter(
     (t) =>
       t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.id.toLowerCase().includes(searchQuery.toLowerCase()),
+      t.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="tech-dashboard-single">
-      {/* HEADER SECTION */}
       <header className="dashboard-hero">
-        <h1>Operations Hub</h1>
-        <p
-          className="muted"
-          style={{ marginTop: "0.75rem", fontSize: "0.9rem" }}
-        >
-          Welcome back,{" "}
-          <span style={{ color: "var(--accent)", fontWeight: 600 }}>
-            {auth?.email}
-          </span>
+        <h1>Technician Operations Hub</h1>
+        <p className="muted" style={{ marginTop: "0.45rem" }}>
+          Signed in as <strong>{auth?.email}</strong>
         </p>
       </header>
 
-      {/* KPI CARDS SECTION */}
       <div className="kpi-cards-section">
         <div className="glass-stat-grid">
           <div className="glass-card">
-            <span className="stat-desc">Open Tasks</span>
+            <span className="stat-desc">Open tasks</span>
             <span className="stat-num">{openCount}</span>
-            <span className="stat-helper">Ready to start</span>
+            <span className="stat-helper">Awaiting action</span>
           </div>
           <div className="glass-card">
-            <span className="stat-desc">In Progress</span>
+            <span className="stat-desc">In progress</span>
             <span className="stat-num">{inProgressCount}</span>
-            <span className="stat-helper">Currently working</span>
+            <span className="stat-helper">Actively handled</span>
           </div>
           <div className="glass-card urgent">
-            <span className="stat-desc" style={{ color: "var(--accent-2)" }}>
-              Urgent
-            </span>
-            <span className="stat-num" style={{ color: "var(--accent-2)" }}>
-              {urgentCount}
-            </span>
-            <span className="stat-helper" style={{ color: "var(--accent-2)" }}>
-              Need attention
-            </span>
+            <span className="stat-desc" style={{ color: "var(--danger-ink)" }}>Urgent</span>
+            <span className="stat-num" style={{ color: "var(--danger-ink)" }}>{urgentCount}</span>
+            <span className="stat-helper">Requires immediate attention</span>
           </div>
           <div className="glass-card">
             <span className="stat-desc">Completion</span>
             <span className="stat-num">{completionRate}%</span>
             <div className="progress-bar">
-              <div
-                className="progress-fill"
-                style={{ width: `${completionRate}%` }}
-              ></div>
+              <div className="progress-fill" style={{ width: `${completionRate}%` }}></div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* MAINTENANCE QUEUE SECTION */}
       <main className="maintenance-queue-section">
         <div className="ops-header">
           <div>
-            <h2>Maintenance Queue</h2>
-            <p
-              className="muted"
-              style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}
-            >
-              {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} assigned
-              to you
+            <h2>Assigned Maintenance Queue</h2>
+            <p className="muted" style={{ margin: "0.4rem 0 0" }}>
+              {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} currently assigned
             </p>
           </div>
-          <button
-            onClick={loadTickets}
-            className="sync-btn"
-            title="Refresh data"
-          >
+          <button onClick={loadTickets} className="sync-btn" title="Refresh">
             Refresh
           </button>
         </div>
 
-        {/* Search Bar */}
         <div className="search-and-filter">
           <div className="search-box">
             <span className="search-icon">Search</span>
             <input
               type="text"
-              placeholder="Search tickets by title or ID..."
+              placeholder="Search by ticket title or ID"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input"
             />
           </div>
-          <div className="filter-bar" style={{ margin: 0 }}>
+          <div className="filter-bar">
             <select
               name="status"
               value={filters.status}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, status: e.target.value }))
-              }
+              onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
               className="filter-select"
             >
-              <option value="">All Statuses</option>
+              <option value="">All statuses</option>
               <option value="OPEN">Open</option>
-              <option value="IN_PROGRESS">In Progress</option>
+              <option value="IN_PROGRESS">In progress</option>
               <option value="RESOLVED">Resolved</option>
               <option value="CLOSED">Closed</option>
             </select>
@@ -162,12 +127,10 @@ export default function TechnicianDashboard() {
             <select
               name="priority"
               value={filters.priority}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, priority: e.target.value }))
-              }
+              onChange={(e) => setFilters((prev) => ({ ...prev, priority: e.target.value }))}
               className="filter-select"
             >
-              <option value="">All Priorities</option>
+              <option value="">All priorities</option>
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
               <option value="HIGH">High</option>
@@ -176,16 +139,8 @@ export default function TechnicianDashboard() {
           </div>
         </div>
 
-        {error && (
-          <div
-            className="alert"
-            style={{ marginBottom: "1.5rem", borderRadius: "16px" }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <div className="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
 
-        {/* Content Area */}
         {loading ? (
           <div className="loading-skeleton">
             <div className="skeleton-card"></div>
@@ -194,12 +149,10 @@ export default function TechnicianDashboard() {
           </div>
         ) : filteredTickets.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">No tickets found</div>
-            <h3>Queue is Empty</h3>
-            <p className="muted">
-              {searchQuery
-                ? "No tickets match your search criteria."
-                : "All assigned tasks are currently complete."}
+            <span className="empty-icon">No matching tickets</span>
+            <h3 style={{ margin: "0 0 0.4rem" }}>Queue is clear</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              {searchQuery ? "Try changing your search filters." : "All assigned tasks are currently completed."}
             </p>
           </div>
         ) : (
@@ -208,37 +161,24 @@ export default function TechnicianDashboard() {
               <div key={ticket.id} className="ticket-card">
                 <div className="ticket-header">
                   <div className="ticket-title-section">
-                    <div
-                      className={`priority-indicator priority-${ticket.priority.toLowerCase()}`}
-                    ></div>
+                    <div className={`priority-indicator priority-${ticket.priority.toLowerCase()}`}></div>
                     <div>
                       <h4 className="ticket-title">{ticket.title}</h4>
-                      <span className="ticket-id">
-                        #{ticket.id.substring(0, 8).toUpperCase()}
-                      </span>
+                      <span className="ticket-id">#{ticket.id.substring(0, 8).toUpperCase()}</span>
                     </div>
                   </div>
-                  <span
-                    className={`status-badge status-${ticket.status.toLowerCase()}`}
-                  >
+                  <span className={`status-badge status-${ticket.status.toLowerCase()}`}>
                     {ticket.status.replace("_", " ")}
                   </span>
                 </div>
                 <div className="ticket-meta">
-                  <span className="meta-item">
-                    Created: {new Date(ticket.createdAt).toLocaleDateString()}
-                  </span>
-                  <span
-                    className={`priority-badge priority-${ticket.priority.toLowerCase()}`}
-                  >
+                  <span className="meta-item">Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                  <span className={`priority-badge priority-${ticket.priority.toLowerCase()}`}>
                     {ticket.priority}
                   </span>
                 </div>
-                <Link
-                  to={`/tickets/${ticket.id}`}
-                  className="ticket-action-btn"
-                >
-                  View Details
+                <Link to={`/tickets/${ticket.id}`} className="ticket-action-btn">
+                  View details
                 </Link>
               </div>
             ))}
@@ -246,22 +186,10 @@ export default function TechnicianDashboard() {
         )}
       </main>
 
-      {/* BOTTOM ACTIONS */}
-      <footer className="bottom-actions">
-        <div className="action-buttons">
-          <Link
-            to="/login"
-            className="text-link"
-            style={{
-              display: "block",
-              textAlign: "center",
-              fontSize: "0.85rem",
-              padding: "0.75rem",
-            }}
-          >
-            Logout / Switch Account
-          </Link>
-        </div>
+      <footer>
+        <Link to="/login" className="text-link">
+          Logout or switch account
+        </Link>
       </footer>
     </div>
   );

@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import {
-  getAllResources,
-  getResourcesByType,
-  createResource,
-  updateResource,
-  deleteResource,
-  restoreResource,
-  updateResourceStatus,
-} from "./resourceService";
 import { useAuth } from "../../context/AuthContext";
 import ResourceForm from "./ResourceForm";
+import {
+  createResource,
+  deleteResource,
+  getAllResources,
+  getResourcesByType,
+  restoreResource,
+  updateResource,
+  updateResourceStatus,
+} from "./resourceService";
 
 export default function AdminResourcesPage() {
   const { auth } = useAuth();
@@ -53,7 +53,6 @@ export default function AdminResourcesPage() {
 
   useEffect(() => {
     loadResources();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterType]);
 
   async function handleCreateResource(payload) {
@@ -62,9 +61,9 @@ export default function AdminResourcesPage() {
     setSuccessMessage("");
     try {
       await createResource(payload, auth?.token);
-      setSuccessMessage(`✓ Resource "${payload.name}" created successfully`);
+      setSuccessMessage(`Resource "${payload.name}" created successfully.`);
       setShowForm(false);
-      setTimeout(() => loadResources(), 800);
+      setTimeout(() => loadResources(), 600);
     } catch (submitError) {
       setError(submitError.message);
     } finally {
@@ -78,10 +77,10 @@ export default function AdminResourcesPage() {
     setSuccessMessage("");
     try {
       await updateResource(editingResource.id, payload, auth?.token);
-      setSuccessMessage(`✓ Resource "${payload.name}" updated successfully`);
+      setSuccessMessage(`Resource "${payload.name}" updated successfully.`);
       setEditingResource(null);
       setShowForm(false);
-      setTimeout(() => loadResources(), 800);
+      setTimeout(() => loadResources(), 600);
     } catch (submitError) {
       setError(submitError.message);
     } finally {
@@ -90,17 +89,15 @@ export default function AdminResourcesPage() {
   }
 
   async function handleDeleteResource(resource) {
-    if (!window.confirm(`Delete "${resource.name}"? This action will archive the resource.`)) {
-      return;
-    }
+    if (!window.confirm(`Archive "${resource.name}"?`)) return;
 
     setBusyResourceId(resource.id);
     setError("");
     setSuccessMessage("");
     try {
       await deleteResource(resource.id, auth?.token);
-      setSuccessMessage(`✓ Resource "${resource.name}" archived`);
-      setTimeout(() => loadResources(), 800);
+      setSuccessMessage(`Resource "${resource.name}" archived.`);
+      setTimeout(() => loadResources(), 600);
     } catch (deleteError) {
       setError(deleteError.message);
     } finally {
@@ -109,17 +106,15 @@ export default function AdminResourcesPage() {
   }
 
   async function handleRestoreResource(resource) {
-    if (!window.confirm(`Restore "${resource.name}"?`)) {
-      return;
-    }
+    if (!window.confirm(`Restore "${resource.name}"?`)) return;
 
     setBusyResourceId(resource.id);
     setError("");
     setSuccessMessage("");
     try {
       await restoreResource(resource.id, auth?.token);
-      setSuccessMessage(`✓ Resource "${resource.name}" restored`);
-      setTimeout(() => loadResources(), 800);
+      setSuccessMessage(`Resource "${resource.name}" restored.`);
+      setTimeout(() => loadResources(), 600);
     } catch (restoreError) {
       setError(restoreError.message);
     } finally {
@@ -129,16 +124,13 @@ export default function AdminResourcesPage() {
 
   async function handleStatusToggle(resource) {
     const newStatus = resource.status === "ACTIVE" ? "OUT_OF_SERVICE" : "ACTIVE";
-
     setBusyResourceId(resource.id);
     setError("");
     setSuccessMessage("");
     try {
       await updateResourceStatus(resource.id, newStatus, auth?.token);
-      setSuccessMessage(
-        `✓ Resource "${resource.name}" status changed to ${newStatus.replace(/_/g, " ")}`
-      );
-      setTimeout(() => loadResources(), 800);
+      setSuccessMessage(`Status changed to ${newStatus.replace(/_/g, " ")}.`);
+      setTimeout(() => loadResources(), 600);
     } catch (statusError) {
       setError(statusError.message);
     } finally {
@@ -160,7 +152,7 @@ export default function AdminResourcesPage() {
   if (showForm) {
     return (
       <section className="card">
-        <h1>{editingResource ? "Edit Resource" : "Create New Resource"}</h1>
+        <h1>{editingResource ? "Edit Resource" : "Create Resource"}</h1>
         {error && <p className="alert">{error}</p>}
         <ResourceForm
           resource={editingResource}
@@ -173,44 +165,44 @@ export default function AdminResourcesPage() {
 
   return (
     <section className="card">
-      <h1>Resource Management</h1>
-      <p className="muted">Create and manage bookable campus resources</p>
+      <div className="page-header">
+        <div>
+          <h1>Resource Management</h1>
+          <p className="muted">Configure and maintain bookable university facilities and equipment.</p>
+        </div>
+      </div>
 
       {error && <p className="alert">{error}</p>}
       {successMessage && <p className="success">{successMessage}</p>}
 
-      <div className="resource-controls">
-        <div className="filter-group">
-          <label htmlFor="typeFilter">Filter by Type:</label>
-          <select
-            id="typeFilter"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="form-input"
-            style={{ maxWidth: "200px" }}
-          >
-            <option value="ALL">All Resources</option>
-            {resourceTypes.map((type) => (
-              <option key={type} value={type}>
-                {type.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button
-          onClick={() => setShowForm(true)}
-          className="primary-btn"
-          disabled={busyResourceId !== ""}
+      <div className="filter-controls" style={{ marginBottom: "1rem" }}>
+        <select
+          id="typeFilter"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="filter-select"
+          style={{ minWidth: "210px" }}
         >
-          + Create Resource
+          <option value="ALL">All resource types</option>
+          {resourceTypes.map((type) => (
+            <option key={type} value={type}>
+              {type.replace(/_/g, " ")}
+            </option>
+          ))}
+        </select>
+
+        <button onClick={() => setShowForm(true)} className="primary-btn" disabled={busyResourceId !== ""}>
+          Create resource
         </button>
       </div>
 
       {loading && <p className="muted">Loading resources...</p>}
 
       {!loading && resources.length === 0 && (
-        <p className="success">✓ No resources found. Create your first resource to get started.</p>
+        <div className="empty-state">
+          <span className="empty-icon">No resources found</span>
+          <p className="muted" style={{ margin: 0 }}>Create your first resource to get started.</p>
+        </div>
       )}
 
       {!loading && resources.length > 0 && (
@@ -228,40 +220,20 @@ export default function AdminResourcesPage() {
             </thead>
             <tbody>
               {resources.map((resource) => (
-                <tr key={resource.id} className={resource.archived ? "archived-row" : ""}>
+                <tr key={resource.id} style={resource.archived ? { opacity: 0.65 } : {}}>
                   <td>
                     <strong>{resource.name}</strong>
                     {resource.description && (
-                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                      <div className="muted" style={{ fontSize: "0.82rem", marginTop: "0.25rem" }}>
                         {resource.description}
                       </div>
                     )}
                   </td>
                   <td>{resource.type.replace(/_/g, " ")}</td>
                   <td>{resource.location}</td>
-                  <td>{resource.capacity || "—"}</td>
+                  <td>{resource.capacity || "-"}</td>
                   <td>
-                    <span
-                      style={{
-                        padding: "0.25rem 0.75rem",
-                        borderRadius: "4px",
-                        fontSize: "0.85rem",
-                        backgroundColor:
-                          resource.status === "ACTIVE"
-                            ? "#d4edda"
-                            : resource.status === "OUT_OF_SERVICE"
-                              ? "#fff3cd"
-                              : "#f8f9fa",
-                        color:
-                          resource.status === "ACTIVE"
-                            ? "#155724"
-                            : resource.status === "OUT_OF_SERVICE"
-                              ? "#856404"
-                              : "#495057",
-                      }}
-                    >
-                      {resource.status.replace(/_/g, " ")}
-                    </span>
+                    <span className={`status-pill status-${resource.status}`}>{resource.status.replace(/_/g, " ")}</span>
                   </td>
                   <td className="actions-cell">
                     {!resource.archived ? (
@@ -271,28 +243,21 @@ export default function AdminResourcesPage() {
                           className="secondary-btn"
                           disabled={busyResourceId === resource.id}
                         >
-                          {busyResourceId === resource.id ? "..." : "Edit"}
+                          Edit
                         </button>
-
                         <button
                           onClick={() => handleStatusToggle(resource)}
                           className="ghost-btn"
                           disabled={busyResourceId === resource.id}
-                          title={
-                            resource.status === "ACTIVE"
-                              ? "Mark as Out of Service"
-                              : "Mark as Active"
-                          }
                         >
                           {resource.status === "ACTIVE" ? "Disable" : "Enable"}
                         </button>
-
                         <button
                           onClick={() => handleDeleteResource(resource)}
                           className="danger-btn"
                           disabled={busyResourceId === resource.id}
                         >
-                          Delete
+                          Archive
                         </button>
                       </>
                     ) : (
@@ -311,89 +276,6 @@ export default function AdminResourcesPage() {
           </table>
         </div>
       )}
-
-      <style>{`
-        .resource-controls {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-          margin-bottom: 2rem;
-          flex-wrap: wrap;
-        }
-
-        .filter-group {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .filter-group label {
-          font-weight: 500;
-          margin: 0;
-        }
-
-        .availability-list {
-          margin: 1rem 0;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          padding: 1rem;
-        }
-
-        .availability-window {
-          padding: 1rem;
-          margin-bottom: 1rem;
-          background-color: #f8f9fa;
-          border-radius: 4px;
-          border-left: 3px solid #0066cc;
-        }
-
-        .availability-window:last-child {
-          margin-bottom: 0;
-        }
-
-        .form-section {
-          margin: 2rem 0;
-          padding: 1rem 0;
-          border-top: 1px solid #e0e0e0;
-        }
-
-        .form-section h3 {
-          margin-top: 0;
-          margin-bottom: 0.5rem;
-        }
-
-        .form-actions {
-          display: flex;
-          gap: 1rem;
-          margin-top: 2rem;
-          padding-top: 1rem;
-          border-top: 1px solid #e0e0e0;
-        }
-
-        .archived-row {
-          opacity: 0.6;
-          background-color: #f5f5f5;
-        }
-
-        .danger-btn {
-          background-color: #f8d7da;
-          color: #721c24;
-          border: 1px solid #f5c6cb;
-          padding: 0.5rem 1rem;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .danger-btn:hover:not(:disabled) {
-          background-color: #f5c6cb;
-        }
-
-        .danger-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      `}</style>
     </section>
   );
 }

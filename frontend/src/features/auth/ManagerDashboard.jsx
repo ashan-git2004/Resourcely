@@ -6,31 +6,40 @@ export default function ManagerDashboard() {
 
   return (
     <section className="card">
-      <h1>Manager Dashboard</h1>
-      <p>Oversee campus operations and resource allocation.</p>
+      <h1>Manager Operations Console</h1>
+      <p className="muted">Oversee service quality, team throughput, and campus resource coordination.</p>
 
-      <div className="info-stack">
+      <div className="profile-strip">
         <div>
-          <strong>Email:</strong> {auth?.email}
+          <strong style={{ fontSize: "0.8rem", textTransform: "uppercase", color: "var(--brand)" }}>
+            Account
+          </strong>
+          <div style={{ fontWeight: 700 }}>{auth?.email}</div>
         </div>
-        <div>
-          <strong>Role:</strong> Manager
+        <span className="status-pill status-resolved">Manager</span>
+      </div>
+
+      <h2 className="section-title">Core Responsibilities</h2>
+      <div className="quick-actions-grid">
+        <div className="quick-action-card">
+          <h3>Performance Monitoring</h3>
+          <p>Review resolution rates, SLA trends, and escalations.</p>
         </div>
-        <div>
-          <strong>Registration Provider:</strong> {auth?.provider}
+        <div className="quick-action-card">
+          <h3>Resource Allocation</h3>
+          <p>Balance staff assignments and operational demand.</p>
+        </div>
+        <div className="quick-action-card">
+          <h3>Request Approvals</h3>
+          <p>Approve operational changes and high-priority requests.</p>
+        </div>
+        <div className="quick-action-card">
+          <h3>Reporting</h3>
+          <p>Generate summaries for leadership and departmental teams.</p>
         </div>
       </div>
 
-      <h2 style={{ marginTop: "1.5rem" }}>Available Actions</h2>
-      <ul style={{ lineHeight: "1.8" }}>
-        <li>View campus analytics and reports</li>
-        <li>Manage resource allocation</li>
-        <li>Review technician assignments</li>
-        <li>Approve operational requests</li>
-        <li>Generate performance reports</li>
-      </ul>
-
-      <p className="muted" style={{ marginTop: "1rem" }}>
+      <p className="muted" style={{ marginTop: "1.2rem" }}>
         <Link to="/login" className="text-link">
           Switch account
         </Link>

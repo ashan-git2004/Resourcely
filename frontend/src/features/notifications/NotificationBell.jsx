@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getNotifications, markAsRead, markAllAsRead } from "./notificationService";
+import { getNotifications, markAllAsRead, markAsRead } from "./notificationService";
 
 export default function NotificationBell() {
   const { auth, isAuthenticated } = useAuth();
@@ -13,7 +13,7 @@ export default function NotificationBell() {
   useEffect(() => {
     if (isAuthenticated) {
       loadNotifications();
-      const interval = setInterval(loadNotifications, 30000); // Polling every 30s
+      const interval = setInterval(loadNotifications, 30000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
@@ -24,6 +24,7 @@ export default function NotificationBell() {
         setShowPanel(false);
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -32,7 +33,7 @@ export default function NotificationBell() {
     try {
       const data = await getNotifications(auth.token);
       setNotifications(data);
-      setUnreadCount(data.filter(n => !n.isRead).length);
+      setUnreadCount(data.filter((n) => !n.isRead).length);
     } catch (err) {
       console.error("Failed to load notifications:", err);
     }
@@ -40,9 +41,9 @@ export default function NotificationBell() {
 
   async function handleMarkAsRead(id) {
     try {
-       await markAsRead(id, auth.token);
-       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-       setUnreadCount(prev => Math.max(0, prev - 1));
+      await markAsRead(id, auth.token);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.error("Failed to mark as read:", err);
     }
@@ -51,7 +52,7 @@ export default function NotificationBell() {
   async function handleMarkAllAsRead() {
     try {
       await markAllAsRead(auth.token);
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
       console.error("Failed to mark all as read:", err);
@@ -62,16 +63,19 @@ export default function NotificationBell() {
 
   return (
     <div className="notif-bell-container" ref={panelRef}>
-      <div onClick={() => setShowPanel(!showPanel)} style={{ fontSize: "1.2rem", padding: "0.5rem" }}>
-        🔔 {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
-      </div>
+      <button type="button" className="notif-trigger" onClick={() => setShowPanel((prev) => !prev)}>
+        <span>Notifications</span>
+        {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
+      </button>
 
       {showPanel && (
-        <div className="notif-panel card" style={{ position: "absolute", top: "100%", right: 0, width: "320px", marginTop: "0.5rem", zIndex: 1000, padding: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>
+        <div className="notif-panel">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.72rem", borderBottom: "1px solid var(--border)" }}>
             <strong>Notifications</strong>
             {unreadCount > 0 && (
-              <button onClick={handleMarkAllAsRead} className="action-link">Mark all as read</button>
+              <button type="button" onClick={handleMarkAllAsRead} className="action-link">
+                Mark all read
+              </button>
             )}
           </div>
 
@@ -80,8 +84,8 @@ export default function NotificationBell() {
               <p className="muted" style={{ padding: "1rem", textAlign: "center" }}>No notifications yet.</p>
             ) : (
               notifications.map((notif) => (
-                <div 
-                  key={notif.id} 
+                <div
+                  key={notif.id}
                   className={`notif-item ${!notif.isRead ? "notif-unread" : ""}`}
                   onClick={() => handleMarkAsRead(notif.id)}
                 >
@@ -94,9 +98,14 @@ export default function NotificationBell() {
               ))
             )}
           </div>
-          
-          <Link to="/notifications" onClick={() => setShowPanel(false)} style={{ display: "block", textAlign: "center", padding: "0.75rem", borderTop: "1px solid var(--border)", textDecoration: "none" }} className="text-link">
-            View all history
+
+          <Link
+            to="/notifications"
+            onClick={() => setShowPanel(false)}
+            style={{ display: "block", textAlign: "center", padding: "0.72rem", borderTop: "1px solid var(--border)", textDecoration: "none" }}
+            className="text-link"
+          >
+            View full history
           </Link>
         </div>
       )}

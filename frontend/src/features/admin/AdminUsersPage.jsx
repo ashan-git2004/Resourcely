@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { approveUser, getPendingUsers, rejectUser } from "../auth/authService";
 import { useAuth } from "../../context/AuthContext";
+import { approveUser, getPendingUsers, rejectUser } from "../auth/authService";
 
 const availableRoles = [
   { value: "USER", label: "User (Student)" },
   { value: "TECHNICIAN", label: "Technician" },
   { value: "MANAGER", label: "Manager" },
-  { value: "ADMIN", label: "Admin" }
+  { value: "ADMIN", label: "Admin" },
 ];
 
 export default function AdminUsersPage() {
@@ -39,7 +39,6 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     loadPendingUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleApprove(userId) {
@@ -47,10 +46,10 @@ export default function AdminUsersPage() {
     setError("");
     setSuccessMessage("");
     try {
-      const user = users.find(u => u.id === userId);
+      const user = users.find((u) => u.id === userId);
       await approveUser(userId, selectedRoles[userId] || "USER", auth?.token);
       setSuccessMessage(`Approved ${user.email} with role ${selectedRoles[userId] || "USER"}`);
-      setTimeout(() => loadPendingUsers(), 800);
+      setTimeout(() => loadPendingUsers(), 600);
     } catch (actionError) {
       setError(actionError.message);
     } finally {
@@ -63,10 +62,10 @@ export default function AdminUsersPage() {
     setError("");
     setSuccessMessage("");
     try {
-      const user = users.find(u => u.id === userId);
+      const user = users.find((u) => u.id === userId);
       await rejectUser(userId, auth?.token);
       setSuccessMessage(`Rejected account for ${user.email}`);
-      setTimeout(() => loadPendingUsers(), 800);
+      setTimeout(() => loadPendingUsers(), 600);
     } catch (actionError) {
       setError(actionError.message);
     } finally {
@@ -76,46 +75,46 @@ export default function AdminUsersPage() {
 
   return (
     <section className="card">
-      <div className="page-header" style={{ marginBottom: "2.5rem" }}>
+      <div className="page-header">
         <div>
           <h1>User Approvals</h1>
-          <p className="muted">Review pending accounts and delegate role-based access.</p>
+          <p className="muted">Review pending accounts and assign the correct operational role.</p>
         </div>
       </div>
 
-      {error && <div className="alert show" style={{ marginBottom: "1.5rem" }}>{error}</div>}
-      {successMessage && <div className="alert success show" style={{ marginBottom: "1.5rem" }}>{successMessage}</div>}
+      {error && <div className="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
+      {successMessage && <div className="success" style={{ marginBottom: "1rem" }}>{successMessage}</div>}
 
       {loading ? (
-        <div style={{ padding: "4rem", textAlign: "center" }} className="muted">Synchronizing user database...</div>
+        <div className="muted" style={{ padding: "2rem", textAlign: "center" }}>
+          Loading pending users...
+        </div>
       ) : users.length === 0 ? (
         <div className="empty-state">
-           <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✅</div>
-           <h3>No Pending Users</h3>
-           <p className="muted">All accounts have been reviewed and processed.</p>
+          <span className="empty-icon">No pending users</span>
+          <h3 style={{ margin: "0 0 0.4rem" }}>Everything is up to date</h3>
+          <p className="muted" style={{ margin: 0 }}>All registrations have already been processed.</p>
         </div>
       ) : (
         <div className="table-wrap">
           <table className="modern-table">
             <thead>
               <tr>
-                <th>User Details</th>
+                <th>User</th>
                 <th>Provider</th>
-                <th>Access Level</th>
-                <th style={{ textAlign: "right" }}>Operation</th>
+                <th>Role</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <div style={{ fontWeight: 700, color: "var(--ink)" }}>{user.email}</div>
-                    <div className="muted" style={{ fontSize: "0.8rem" }}>UID: {user.id.substring(0, 8)}</div>
+                    <div style={{ fontWeight: 700 }}>{user.email}</div>
+                    <div className="muted" style={{ fontSize: "0.8rem" }}>ID: {user.id.substring(0, 8)}</div>
                   </td>
                   <td>
-                    <span className={`badge`} style={{ background: user.provider === "GOOGLE" ? "rgba(0,102,204,0.08)" : "rgba(0,0,0,0.05)", color: user.provider === "GOOGLE" ? "#0066cc" : "inherit" }}>
-                      {user.provider}
-                    </span>
+                    <span className="badge">{user.provider}</span>
                   </td>
                   <td>
                     <select
@@ -127,7 +126,6 @@ export default function AdminUsersPage() {
                         }))
                       }
                       className="filter-select"
-                      style={{ padding: "0.5rem", borderRadius: "10px", width: "100%" }}
                     >
                       {availableRoles.map((role) => (
                         <option key={role.value} value={role.value}>
@@ -136,25 +134,23 @@ export default function AdminUsersPage() {
                       ))}
                     </select>
                   </td>
-                  <td style={{ textAlign: "right" }}>
-                    <div className="flex-center" style={{ justifyContent: "flex-end", gap: "0.5rem" }}>
+                  <td>
+                    <div className="actions-cell">
                       <button
                         type="button"
                         className="primary-btn"
-                        style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
                         disabled={busyUserId === user.id}
                         onClick={() => handleApprove(user.id)}
                       >
-                        {busyUserId === user.id ? "..." : "Approve"}
+                        {busyUserId === user.id ? "Working..." : "Approve"}
                       </button>
                       <button
                         type="button"
                         className="ghost-btn"
-                        style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
                         disabled={busyUserId === user.id}
                         onClick={() => handleReject(user.id)}
                       >
-                        {busyUserId === user.id ? "..." : "Reject"}
+                        {busyUserId === user.id ? "Working..." : "Reject"}
                       </button>
                     </div>
                   </td>
@@ -165,24 +161,24 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      <div className="glass-card" style={{ marginTop: "3rem", background: "rgba(0,137,123,0.03)" }}>
-        <h3 style={{ margin: "0 0 1rem 0", color: "var(--accent)" }}>Role Governance</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem" }}>
-          <div>
-            <strong style={{ fontSize: "0.85rem", color: "var(--ink)" }}>STUDENT</strong>
-            <p className="muted" style={{ fontSize: "0.8rem", margin: "0.25rem 0" }}>Campus issue reporting and schedule oversight.</p>
+      <div className="glass-card" style={{ marginTop: "1.2rem" }}>
+        <h3 style={{ marginTop: 0 }}>Role Guide</h3>
+        <div className="quick-actions-grid">
+          <div className="quick-action-card">
+            <h3>Student</h3>
+            <p>Access student operations and request services.</p>
           </div>
-          <div>
-            <strong style={{ fontSize: "0.85rem", color: "var(--ink)" }}>TECHNICIAN</strong>
-            <p className="muted" style={{ fontSize: "0.8rem", margin: "0.25rem 0" }}>Infrastructure repairs and maintenance hub usage.</p>
+          <div className="quick-action-card">
+            <h3>Technician</h3>
+            <p>Manage tickets, maintenance updates, and resolution notes.</p>
           </div>
-          <div>
-            <strong style={{ fontSize: "0.85rem", color: "var(--ink)" }}>MANAGER</strong>
-            <p className="muted" style={{ fontSize: "0.8rem", margin: "0.25rem 0" }}>Operational analytics and resource management.</p>
+          <div className="quick-action-card">
+            <h3>Manager</h3>
+            <p>Monitor operational performance and coordinate teams.</p>
           </div>
-          <div>
-            <strong style={{ fontSize: "0.85rem", color: "var(--ink)" }}>ADMIN</strong>
-            <p className="muted" style={{ fontSize: "0.8rem", margin: "0.25rem 0" }}>Primary security and role delegation authority.</p>
+          <div className="quick-action-card">
+            <h3>Admin</h3>
+            <p>Manage accounts, permissions, and resource governance.</p>
           </div>
         </div>
       </div>

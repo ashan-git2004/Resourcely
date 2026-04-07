@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export default function DashboardPage() {
@@ -9,13 +9,12 @@ export default function DashboardPage() {
 
   const roleList = useMemo(() => roles.join(", "), [roles]);
 
-  // Check if user has no assigned role (pending approval)
   if (roles.length === 0) {
     return (
       <section className="card">
         <h1>Account Pending Approval</h1>
         <p className="alert">
-          Your account is awaiting admin approval. Once approved with a role assigned, you'll have access to resources based on your role.
+          Your account is awaiting administrator review. Access will be granted once a role is assigned.
         </p>
 
         <div className="info-stack">
@@ -23,15 +22,15 @@ export default function DashboardPage() {
             <strong>Email:</strong> {auth?.email}
           </div>
           <div>
-            <strong>Registration Provider:</strong> {auth?.provider}
+            <strong>Registration provider:</strong> {auth?.provider}
           </div>
           <div>
-            <strong>Status:</strong> Pending Admin Approval
+            <strong>Status:</strong> Pending approval
           </div>
         </div>
 
         <p className="muted" style={{ marginTop: "1rem" }}>
-          Please wait for an administrator to review your account and assign appropriate permissions.
+          If this takes longer than expected, contact your operations administrator.
         </p>
 
         <Link to="/login" className="text-link">
@@ -43,8 +42,8 @@ export default function DashboardPage() {
 
   return (
     <section className="card">
-      <h1>Welcome back</h1>
-      <p>You are logged in successfully.</p>
+      <h1>Workspace Access Confirmed</h1>
+      <p className="muted">You are signed in and ready to continue.</p>
 
       <div className="info-stack">
         <div>
@@ -58,25 +57,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <h2 style={{ marginTop: "1.5rem" }}>Your Permissions</h2>
+      <h2 style={{ marginTop: "1.2rem" }}>Current Permissions</h2>
       <div className="info-stack">
-        {roles.includes("ADMIN") && (
-          <div>✓ Admin access - manage user approvals and permissions</div>
-        )}
-        {roles.includes("TECHNICIAN") && (
-          <div>✓ Technician access - manage campus infrastructure</div>
-        )}
-        {roles.includes("MANAGER") && (
-          <div>✓ Manager access - oversee operations and analytics</div>
-        )}
-        {roles.includes("USER") && (
-          <div>✓ User access - access campus facilities and services</div>
-        )}
+        {roles.includes("ADMIN") && <div>Admin access: manage users, roles, and resource configuration.</div>}
+        {roles.includes("TECHNICIAN") && <div>Technician access: manage assigned maintenance and ticket workflows.</div>}
+        {roles.includes("MANAGER") && <div>Manager access: monitor operations and coordinate teams.</div>}
+        {roles.includes("USER") && <div>User access: use student-facing service features.</div>}
       </div>
 
       {isAdmin && (
         <Link to="/admin/users" className="text-link" style={{ display: "block", marginTop: "1rem" }}>
-          → Go to admin approvals panel
+          Open admin approvals panel
         </Link>
       )}
 

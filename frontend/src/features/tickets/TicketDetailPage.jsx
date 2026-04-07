@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getTicketDetail, updateTicketStatus, updateResolutionNotes } from "./ticketService";
 import TicketComments from "./TicketComments";
+import { getTicketDetail, updateResolutionNotes, updateTicketStatus } from "./ticketService";
 
 export default function TicketDetailPage() {
   const { ticketId } = useParams();
@@ -38,8 +38,8 @@ export default function TicketDetailPage() {
       setError("");
       setSuccess("");
       await updateTicketStatus(ticketId, newStatus, auth.token);
-      setSuccess(`Status updated to ${newStatus.replace("_", " ")}`);
-      loadTicket(); // Reload ticket to get updated status and potentially SLA metrics
+      setSuccess(`Status updated to ${newStatus.replace("_", " ")}.`);
+      loadTicket();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -53,7 +53,7 @@ export default function TicketDetailPage() {
       setError("");
       setSuccess("");
       await updateResolutionNotes(ticketId, resolutionNotes, auth.token);
-      setSuccess("Resolution notes updated successfully");
+      setSuccess("Resolution notes updated successfully.");
       loadTicket();
     } catch (err) {
       setError(err.message);
@@ -62,129 +62,116 @@ export default function TicketDetailPage() {
     }
   }
 
-  const allowedTransitions = {
-    "OPEN": ["IN_PROGRESS"],
-    "IN_PROGRESS": ["RESOLVED"],
-    "RESOLVED": ["CLOSED"],
-    "CLOSED": [],
-    "REJECTED": []
-  }[ticket?.status] || [];
+  const allowedTransitions =
+    {
+      OPEN: ["IN_PROGRESS"],
+      IN_PROGRESS: ["RESOLVED"],
+      RESOLVED: ["CLOSED"],
+      CLOSED: [],
+      REJECTED: [],
+    }[ticket?.status] || [];
 
   if (loading && !ticket) return <div className="layout">Loading ticket details...</div>;
-  if (error && !ticket) return <div className="layout"><div className="alert">{error}</div><Link to="/technician/tickets" className="text-link">Back to tickets</Link></div>;
+
+  if (error && !ticket) {
+    return (
+      <div className="layout">
+        <div className="alert">{error}</div>
+        <Link to="/technician/tickets" className="text-link">
+          Back to tickets
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: "800px", margin: "2rem auto" }}>
-      <div style={{ marginBottom: "1rem" }}>
-        <Link to="/technician/tickets" className="text-link">← Back to Assigned Tickets</Link>
+    <div className="page-container" style={{ maxWidth: "920px" }}>
+      <div style={{ marginBottom: "0.8rem" }}>
+        <Link to="/technician/tickets" className="text-link">
+          Back to assigned tickets
+        </Link>
       </div>
 
       <section className="card">
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+        <header className="page-header" style={{ marginBottom: "1rem" }}>
           <div>
-            <h1 style={{ marginBottom: "0.25rem" }}>{ticket?.title}</h1>
+            <h1 style={{ marginBottom: "0.3rem" }}>{ticket?.title}</h1>
             <div className="muted">#{ticket?.id}</div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
-            <span className={`badge status-${ticket?.status.toLowerCase()}`}>
-              {ticket?.status.replace("_", " ")}
-            </span>
-            <span className={`badge priority-${ticket?.priority.toLowerCase()}`}>
-              Priority: {ticket?.priority}
-            </span>
+          <div className="filter-controls">
+            <span className={`badge status-${ticket?.status.toLowerCase()}`}>{ticket?.status.replace("_", " ")}</span>
+            <span className={`badge priority-${ticket?.priority.toLowerCase()}`}>Priority: {ticket?.priority}</span>
           </div>
         </header>
 
-        <section className="info-stack" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-          <div>
-            <label className="muted">Reporter</label>
-            <div>{ticket?.owner?.email}</div>
+        <section className="resource-details-grid">
+          <div className="info-row">
+            <label>Reporter</label>
+            <span>{ticket?.owner?.email}</span>
           </div>
-          <div>
-            <label className="muted">Assigned To</label>
-            <div>{ticket?.assignedTechnician?.email || "Unassigned"}</div>
+          <div className="info-row">
+            <label>Assigned technician</label>
+            <span>{ticket?.assignedTechnician?.email || "Unassigned"}</span>
           </div>
-        </section>
-
-        <section style={{ marginTop: "1rem" }}>
-          <label className="muted" style={{ display: "block", marginBottom: "0.5rem" }}>Description</label>
-          <div style={{ padding: "0.75rem", background: "#fff", border: "1px solid var(--border)", borderRadius: "8px" }}>
-            {ticket?.description || "No description provided."}
+          <div className="info-row">
+            <label>Description</label>
+            <span>{ticket?.description || "No description provided."}</span>
           </div>
         </section>
 
-        {/* SLA METRICS (Business Goal 3) */}
         <section className="sla-grid">
           <div className="sla-item">
-            <span className="sla-label">First Response Time</span>
+            <span className="sla-label">First response</span>
             <span className="sla-value">
-              {ticket?.timeToFirstResponseMinutes !== null 
-                ? `${ticket.timeToFirstResponseMinutes}m` 
-                : "PENDING"}
+              {ticket?.timeToFirstResponseMinutes !== null ? `${ticket.timeToFirstResponseMinutes}m` : "Pending"}
             </span>
           </div>
           <div className="sla-item">
-            <span className="sla-label">Resolution Time</span>
+            <span className="sla-label">Resolution time</span>
             <span className="sla-value">
-              {ticket?.timeToResolutionMinutes !== null 
-                ? `${ticket.timeToResolutionMinutes}m` 
-                : "PENDING"}
+              {ticket?.timeToResolutionMinutes !== null ? `${ticket.timeToResolutionMinutes}m` : "Pending"}
             </span>
           </div>
         </section>
 
-        {error && <div className="alert" style={{ marginTop: "1rem" }}>{error}</div>}
-        {success && <div className="success" style={{ marginTop: "1rem" }}>{success}</div>}
+        {error && <div className="alert" style={{ marginTop: "0.9rem" }}>{error}</div>}
+        {success && <div className="success" style={{ marginTop: "0.9rem" }}>{success}</div>}
 
-        {/* CONTROLS (Business Goal 1) */}
-        <footer style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid var(--border)" }}>
-          <h3>Update Ticket Status</h3>
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-            {allowedTransitions.map(newStatus => (
-              <button 
-                key={newStatus} 
+        <footer className="form-section">
+          <h3 style={{ marginTop: 0 }}>Update Ticket Status</h3>
+          <div className="filter-controls" style={{ marginTop: "0.5rem" }}>
+            {allowedTransitions.map((newStatus) => (
+              <button
+                key={newStatus}
                 onClick={() => handleStatusUpdate(newStatus)}
                 disabled={updating}
                 className="primary-btn"
-                style={{ padding: "0.5rem 1rem" }}
               >
                 Mark as {newStatus.replace("_", " ")}
               </button>
             ))}
             {allowedTransitions.length === 0 && (
-              <p className="muted" style={{ fontStyle: "italic" }}>No further status transitions available.</p>
+              <p className="muted" style={{ margin: 0 }}>No further status transitions available.</p>
             )}
           </div>
 
-          <div style={{ marginTop: "1.5rem" }}>
-            <label className="muted" style={{ display: "block", marginBottom: "0.5rem" }}>Resolution Notes</label>
-            <textarea 
-              style={{ 
-                width: "100%", 
-                minHeight: "100px", 
-                padding: "0.75rem", 
-                border: "1px solid #baa97e", 
-                borderRadius: "8px", 
-                font: "inherit" 
-              }}
+          <div style={{ marginTop: "1rem" }}>
+            <label htmlFor="resolution-notes">Resolution notes</label>
+            <textarea
+              id="resolution-notes"
               value={resolutionNotes}
               onChange={(e) => setResolutionNotes(e.target.value)}
-              placeholder="Add details about the solution..."
+              placeholder="Document findings, actions taken, and final outcome"
+              rows={4}
             />
-            <button 
-              onClick={handleResolutionNotesUpdate}
-              disabled={updating}
-              className="ghost-btn"
-              style={{ marginTop: "0.5rem" }}
-            >
-              Update Resolution Notes
+            <button onClick={handleResolutionNotesUpdate} disabled={updating} className="ghost-btn" style={{ marginTop: "0.5rem" }}>
+              Save resolution notes
             </button>
           </div>
         </footer>
       </section>
 
-      {/* COMMENTS (Business Goal 2) */}
-      <section style={{ marginTop: "2rem" }}>
+      <section style={{ marginTop: "1rem" }}>
         <TicketComments ticketId={ticketId} />
       </section>
     </div>
