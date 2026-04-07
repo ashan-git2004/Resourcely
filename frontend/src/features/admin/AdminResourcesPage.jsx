@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {
   getAllResources,
   getResourcesByType,
+  getResourcesByLocation,
+  getResourcesByStatus,
   createResource,
   updateResource,
   deleteResource,
@@ -19,8 +21,13 @@ export default function AdminResourcesPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
-  const [filterType, setFilterType] = useState("ALL");
   const [busyResourceId, setBusyResourceId] = useState("");
+
+  // Filter states
+  const [filterType, setFilterType] = useState("ALL");
+  const [filterLocation, setFilterLocation] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterCapacity, setFilterCapacity] = useState("");
 
   const resourceTypes = [
     "LECTURE_HALL",
@@ -35,14 +42,31 @@ export default function AdminResourcesPage() {
     "SPORTS_FACILITY",
   ];
 
+  const resourceStatuses = ["ACTIVE", "OUT_OF_SERVICE"];
+
   async function loadResources() {
     setLoading(true);
     setError("");
     try {
-      const data =
-        filterType === "ALL"
-          ? await getAllResources(auth?.token)
-          : await getResourcesByType(filterType, auth?.token);
+      let data = [];
+
+      // Apply filters based on priority
+      if (filterType !== "ALL") {
+        data = await getResourcesByType(filterType, auth?.token);
+      } else if (filterLocation !== "ALL") {
+        data = await getResourcesByLocation(filterLocation, auth?.token);
+      } else if (filterStatus !== "ALL") {
+        data = await getResourcesByStatus(filterStatus, auth?.token);
+      } else {
+        data = await getAllResources(auth?.token);
+      }
+
+      // Apply capacity filter (client-side)
+      if (filterCapacity && data.length > 0) {
+        const minCapacity = parseInt(filterCapacity);
+        data = data.filter((resource) => resource.capacity && resource.capacity >= minCapacity);
+      }
+
       setResources(data || []);
     } catch (loadError) {
       setError(loadError.message);
@@ -54,7 +78,12 @@ export default function AdminResourcesPage() {
   useEffect(() => {
     loadResources();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterType]);
+  }, [filterType, filterLocation, filterStatus, filterCapacity]);
+
+  // Get unique locations from all resources for filter dropdown
+  const getUniqueLocations = () => {
+    return [...new Set(resources.map((r) => r.location))].filter(Boolean).sort();
+  };
 
   async function handleCreateResource(payload) {
     setBusyResourceId("create");
@@ -180,22 +209,70 @@ export default function AdminResourcesPage() {
       {successMessage && <p className="success">{successMessage}</p>}
 
       <div className="resource-controls">
-        <div className="filter-group">
-          <label htmlFor="typeFilter">Filter by Type:</label>
-          <select
-            id="typeFilter"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="form-input"
-            style={{ maxWidth: "200px" }}
-          >
-            <option value="ALL">All Resources</option>
-            {resourceTypes.map((type) => (
-              <option key={type} value={type}>
-                {type.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
+        <div className="filters-grid">
+          <div className="filter-group">
+            <label htmlFor="typeFilter">Type:</label>
+            <select
+              id="typeFilter"
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="form-input"
+            >
+              <option value="ALL">All Types</option>
+              {resourceTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type.replace(/_/g, " ")}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label htmlFor="locationFilter">Location:</label>
+            <select
+              id="locationFilter"
+              value={filterLocation}
+              onChange={(e) => setFilterLocation(e.target.value)}
+              className="form-input"
+            >
+              <option value="ALL">All Locations</option>
+              {getUniqueLocations().map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label htmlFor="statusFilter">Status:</label>
+            <select
+              id="statusFilter"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="form-input"
+            >
+              <option value="ALL">All Statuses</option>
+              {resourceStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status.replace(/_/g, " ")}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label htmlFor="capacityFilter">Min Capacity:</label>
+            <input
+              id="capacityFilter"
+              type="number"
+              min="1"
+              value={filterCapacity}
+              onChange={(e) => setFilterCapacity(e.target.value)}
+              placeholder="e.g., 50"
+              className="form-input"
+            />
+          </div>
         </div>
 
         <button
@@ -316,20 +393,33 @@ export default function AdminResourcesPage() {
         .resource-controls {
           display: flex;
           gap: 1rem;
-          align-items: center;
+          align-items: flex-end;
           margin-bottom: 2rem;
           flex-wrap: wrap;
         }
 
+        .filters-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 0.8rem;
+          flex: 1;
+        }
+
         .filter-group {
           display: flex;
-          align-items: center;
-          gap: 0.5rem;
+          flex-direction: column;
+          gap: 0.3rem;
         }
 
         .filter-group label {
           font-weight: 500;
           margin: 0;
+          font-size: 0.9rem;
+        }
+
+        .filter-group select,
+        .filter-group input {
+          width: 100%;
         }
 
         .availability-list {
