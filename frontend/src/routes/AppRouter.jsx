@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 import AdminUsersPage from "../features/admin/AdminUsersPage";
 import AdminResourcesPage from "../features/admin/AdminResourcesPage";
+import AdminBookingsPage from "../features/admin/AdminBookingsPage";
 import ResourceDetails from "../features/admin/ResourceDetails";
 import DashboardPage from "../features/auth/DashboardPage";
 import LoginPage from "../features/auth/LoginPage";
@@ -98,6 +99,14 @@ export default function AppRouter() {
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <ResourceDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/bookings"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <AdminBookingsPage />
               </ProtectedRoute>
             }
           />
