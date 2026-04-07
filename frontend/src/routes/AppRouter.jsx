@@ -2,6 +2,8 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 import AdminUsersPage from "../features/admin/AdminUsersPage";
+import AdminResourcesPage from "../features/admin/AdminResourcesPage";
+import ResourceDetails from "../features/admin/ResourceDetails";
 import DashboardPage from "../features/auth/DashboardPage";
 import LoginPage from "../features/auth/LoginPage";
 import ManagerDashboard from "../features/auth/ManagerDashboard";
@@ -108,6 +110,14 @@ export default function AppRouter() {
             }
           />
           <Route
+            path="/admin/resources"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <AdminResourcesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/tickets/:ticketId"
             element={
               <ProtectedRoute
@@ -122,6 +132,14 @@ export default function AppRouter() {
             element={
               <ProtectedRoute>
                 <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/resources/:id"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <ResourceDetails />
               </ProtectedRoute>
             }
           />
