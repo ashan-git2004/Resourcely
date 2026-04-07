@@ -50,14 +50,15 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="card">
-      <h1>Create Account</h1>
-      <p className="muted">
-        Register to get started. After verification, admins will assign your role and permissions.
-      </p>
+    <div className="auth-layout">
+      <div className="card">
+        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+          <h1 className="brand" style={{ fontSize: "2.2rem", marginBottom: "0.5rem" }}>Create Account</h1>
+          <p className="muted">Join the Smart Campus operations portal</p>
+        </div>
 
-      {error && <p className="alert">{error}</p>}
-      {success && <p className="success">{success}</p>}
+        {error && <div className="alert show" style={{ marginBottom: "1.5rem" }}>{error}</div>}
+        {success && <div className="alert success show" style={{ marginBottom: "1.5rem" }}>{success}</div>}
 
       <form onSubmit={handleSubmit} className="form-grid">
         <label htmlFor="register-email">Email Address</label>
@@ -121,6 +122,7 @@ export default function RegisterPage() {
           <li>Login anytime using your chosen authentication method</li>
         </ol>
       </div>
-    </section>
+      </div>
+    </div>
   );
 }

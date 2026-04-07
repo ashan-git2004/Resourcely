@@ -76,47 +76,47 @@ export default function AdminUsersPage() {
 
   return (
     <section className="card">
-      <h1>Pending User Approvals</h1>
-      <p className="muted">Review pending accounts and assign role-based access permissions.</p>
+      <div className="page-header" style={{ marginBottom: "2.5rem" }}>
+        <div>
+          <h1>User Approvals</h1>
+          <p className="muted">Review pending accounts and delegate role-based access.</p>
+        </div>
+      </div>
 
-      {error && <p className="alert">{error}</p>}
-      {successMessage && <p className="success">{successMessage}</p>}
+      {error && <div className="alert show" style={{ marginBottom: "1.5rem" }}>{error}</div>}
+      {successMessage && <div className="alert success show" style={{ marginBottom: "1.5rem" }}>{successMessage}</div>}
 
-      {loading && <p className="muted">Loading pending users...</p>}
-
-      {!loading && users.length === 0 && (
-        <p className="success">✓ No pending users. All accounts have been reviewed.</p>
-      )}
-
-      {!loading && users.length > 0 && (
+      {loading ? (
+        <div style={{ padding: "4rem", textAlign: "center" }} className="muted">Synchronizing user database...</div>
+      ) : users.length === 0 ? (
+        <div className="empty-state">
+           <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✅</div>
+           <h3>No Pending Users</h3>
+           <p className="muted">All accounts have been reviewed and processed.</p>
+        </div>
+      ) : (
         <div className="table-wrap">
-          <table className="admin-table">
+          <table className="modern-table">
             <thead>
               <tr>
-                <th>Email</th>
+                <th>User Details</th>
                 <th>Provider</th>
-                <th>Status</th>
-                <th>Assign Role</th>
-                <th>Actions</th>
+                <th>Access Level</th>
+                <th style={{ textAlign: "right" }}>Operation</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td>{user.email}</td>
                   <td>
-                    <span 
-                      style={{
-                        padding: "0.25rem 0.5rem",
-                        borderRadius: "4px",
-                        backgroundColor: user.provider === "GOOGLE" ? "#f0f7ff" : "#f8f8f8",
-                        fontSize: "0.85rem"
-                      }}
-                    >
+                    <div style={{ fontWeight: 700, color: "var(--ink)" }}>{user.email}</div>
+                    <div className="muted" style={{ fontSize: "0.8rem" }}>UID: {user.id.substring(0, 8)}</div>
+                  </td>
+                  <td>
+                    <span className={`badge`} style={{ background: user.provider === "GOOGLE" ? "rgba(0,102,204,0.08)" : "rgba(0,0,0,0.05)", color: user.provider === "GOOGLE" ? "#0066cc" : "inherit" }}>
                       {user.provider}
                     </span>
                   </td>
-                  <td>{user.approvalStatus}</td>
                   <td>
                     <select
                       value={selectedRoles[user.id] || "USER"}
@@ -126,7 +126,8 @@ export default function AdminUsersPage() {
                           [user.id]: event.target.value,
                         }))
                       }
-                      style={{ padding: "0.5rem", borderRadius: "4px" }}
+                      className="filter-select"
+                      style={{ padding: "0.5rem", borderRadius: "10px", width: "100%" }}
                     >
                       {availableRoles.map((role) => (
                         <option key={role.value} value={role.value}>
@@ -135,23 +136,27 @@ export default function AdminUsersPage() {
                       ))}
                     </select>
                   </td>
-                  <td className="actions-cell">
-                    <button
-                      type="button"
-                      className="primary-btn"
-                      disabled={busyUserId === user.id}
-                      onClick={() => handleApprove(user.id)}
-                    >
-                      {busyUserId === user.id ? "..." : "Approve"}
-                    </button>
-                    <button
-                      type="button"
-                      className="ghost-btn"
-                      disabled={busyUserId === user.id}
-                      onClick={() => handleReject(user.id)}
-                    >
-                      {busyUserId === user.id ? "..." : "Reject"}
-                    </button>
+                  <td style={{ textAlign: "right" }}>
+                    <div className="flex-center" style={{ justifyContent: "flex-end", gap: "0.5rem" }}>
+                      <button
+                        type="button"
+                        className="primary-btn"
+                        style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
+                        disabled={busyUserId === user.id}
+                        onClick={() => handleApprove(user.id)}
+                      >
+                        {busyUserId === user.id ? "..." : "Approve"}
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-btn"
+                        style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
+                        disabled={busyUserId === user.id}
+                        onClick={() => handleReject(user.id)}
+                      >
+                        {busyUserId === user.id ? "..." : "Reject"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -160,14 +165,26 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      <div style={{ marginTop: "1.5rem", padding: "1rem", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
-        <h3 style={{ marginTop: 0 }}>Role Descriptions</h3>
-        <ul style={{ fontSize: "0.9rem", lineHeight: "1.8" }}>
-          <li><strong>User (Student):</strong> Can access campus facilities, view schedules, and report issues</li>
-          <li><strong>Technician:</strong> Can manage infrastructure, handle maintenance requests, monitor systems</li>
-          <li><strong>Manager:</strong> Can oversee operations, view analytics, manage resource allocation</li>
-          <li><strong>Admin:</strong> Full system access, can approve users and manage all permissions</li>
-        </ul>
+      <div className="glass-card" style={{ marginTop: "3rem", background: "rgba(0,137,123,0.03)" }}>
+        <h3 style={{ margin: "0 0 1rem 0", color: "var(--accent)" }}>Role Governance</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem" }}>
+          <div>
+            <strong style={{ fontSize: "0.85rem", color: "var(--ink)" }}>STUDENT</strong>
+            <p className="muted" style={{ fontSize: "0.8rem", margin: "0.25rem 0" }}>Campus issue reporting and schedule oversight.</p>
+          </div>
+          <div>
+            <strong style={{ fontSize: "0.85rem", color: "var(--ink)" }}>TECHNICIAN</strong>
+            <p className="muted" style={{ fontSize: "0.8rem", margin: "0.25rem 0" }}>Infrastructure repairs and maintenance hub usage.</p>
+          </div>
+          <div>
+            <strong style={{ fontSize: "0.85rem", color: "var(--ink)" }}>MANAGER</strong>
+            <p className="muted" style={{ fontSize: "0.8rem", margin: "0.25rem 0" }}>Operational analytics and resource management.</p>
+          </div>
+          <div>
+            <strong style={{ fontSize: "0.85rem", color: "var(--ink)" }}>ADMIN</strong>
+            <p className="muted" style={{ fontSize: "0.8rem", margin: "0.25rem 0" }}>Primary security and role delegation authority.</p>
+          </div>
+        </div>
       </div>
     </section>
   );

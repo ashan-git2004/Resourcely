@@ -51,11 +51,14 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="card">
-      <h1>Sign In</h1>
-      <p className="muted">Access your Smart Campus account.</p>
+    <div className="auth-layout">
+      <div className="card">
+        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+          <h1 className="brand" style={{ fontSize: "2.2rem", marginBottom: "0.5rem" }}>Smart Campus</h1>
+          <p className="muted">Secure Operations Dashboard</p>
+        </div>
 
-      {error && <p className="alert">{error}</p>}
+        {error && <div className="alert show" style={{ marginBottom: "1.5rem" }}>{error}</div>}
 
       <form onSubmit={handleSubmit} className="form-grid">
         <label htmlFor="login-email">Email</label>
@@ -98,7 +101,8 @@ export default function LoginPage() {
           <li>Sign in with Google (if registered with Google or you want to link existing account)</li>
           <li>After sign-in, admin approval is required before accessing campus resources</li>
         </ul>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
