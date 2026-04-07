@@ -4,7 +4,7 @@ import com.smartcampus.dto.request.BookingActionRequest;
 import com.smartcampus.model.Booking;
 import com.smartcampus.model.BookingStatus;
 import com.smartcampus.service.BookingService;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -59,8 +59,8 @@ public class AdminBookingController {
      */
     @GetMapping("/range")
     public ResponseEntity<List<Booking>> getBookingsByDateRange(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate) {
 
         List<Booking> bookings = bookingService.getBookingsByDateRange(startDate, endDate);
         return ResponseEntity.ok(bookings);
@@ -141,8 +141,8 @@ public class AdminBookingController {
     @GetMapping("/conflicts")
     public ResponseEntity<List<Booking>> checkConflicts(
             @RequestParam String resourceId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endTime) {
 
         List<Booking> conflicts = bookingService.checkConflicts(resourceId, startTime, endTime);
         return ResponseEntity.ok(conflicts);

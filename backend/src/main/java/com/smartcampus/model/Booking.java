@@ -1,7 +1,6 @@
 package com.smartcampus.model;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -29,9 +28,9 @@ public class Booking {
 
     private String userName;      // Cached user name for quick access
 
-    private LocalDateTime startTime;
+    private Instant startTime;
 
-    private LocalDateTime endTime;
+    private Instant endTime;
 
     /**
      * Current status of the booking in the approval workflow.
@@ -63,7 +62,7 @@ public class Booking {
     public Booking() {
     }
 
-    public Booking(String userId, String resourceId, LocalDateTime startTime, LocalDateTime endTime, String purpose) {
+    public Booking(String userId, String resourceId, Instant startTime, Instant endTime, String purpose) {
         this.userId = userId;
         this.resourceId = resourceId;
         this.startTime = startTime;
@@ -115,19 +114,19 @@ public class Booking {
         this.userName = userName;
     }
 
-    public LocalDateTime getStartTime() {
+    public Instant getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(LocalDateTime startTime) {
+    public void setStartTime(Instant startTime) {
         this.startTime = startTime;
     }
 
-    public LocalDateTime getEndTime() {
+    public Instant getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(LocalDateTime endTime) {
+    public void setEndTime(Instant endTime) {
         this.endTime = endTime;
     }
 

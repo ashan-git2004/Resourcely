@@ -6,7 +6,6 @@ import com.smartcampus.model.Booking;
 import com.smartcampus.model.BookingStatus;
 import com.smartcampus.repository.BookingRepository;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -112,7 +111,7 @@ public class BookingService {
     /**
      * Get bookings within a date range.
      */
-    public List<Booking> getBookingsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+    public List<Booking> getBookingsByDateRange(Instant startDate, Instant endDate) {
         return bookingRepository.findByStartTimeBetween(startDate, endDate);
     }
 
@@ -179,7 +178,7 @@ public class BookingService {
     /**
      * Check for time conflicts: Find if resource is booked during timeframe.
      */
-    public List<Booking> checkConflicts(String resourceId, LocalDateTime startTime, LocalDateTime endTime) {
+    public List<Booking> checkConflicts(String resourceId, Instant startTime, Instant endTime) {
         return bookingRepository
                 .findByStartTimeGreaterThanAndEndTimeLessThanAndResourceId(startTime, endTime, resourceId)
                 .stream()

@@ -2,11 +2,13 @@
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/config/AdminBootstrapSeeder.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/config/MongoConfig.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/config/SecurityConfig.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/AdminBookingController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/AdminResourceController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/AdminUserController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/AuthController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/UserController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/ApproveUserRequest.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/BookingActionRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/CreateResourceRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/LoginRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/RegisterRequest.java
@@ -21,10 +23,13 @@
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/ApprovalStatus.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/AuthProvider.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/AvailabilityWindow.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/Booking.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/BookingStatus.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/Resource.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/ResourceStatus.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/User.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/UserRole.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/repository/BookingRepository.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/repository/ResourceRepository.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/repository/UserRepository.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/security/UserDetailsServiceImpl.java
@@ -34,4 +39,5 @@
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/security/oauth2/OAuth2SuccessHandler.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/service/AdminUserService.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/service/AuthService.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/service/BookingService.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/service/ResourceService.java

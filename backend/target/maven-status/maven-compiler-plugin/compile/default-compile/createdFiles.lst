@@ -1,6 +1,8 @@
+com/smartcampus/service/BookingService.class
 com/smartcampus/security/UserDetailsServiceImpl.class
 com/smartcampus/security/oauth2/CustomOAuth2UserService.class
 com/smartcampus/controller/UserController.class
+com/smartcampus/model/BookingStatus.class
 com/smartcampus/dto/request/UpdateResourceRequest.class
 com/smartcampus/dto/request/CreateResourceRequest.class
 com/smartcampus/model/UserRole.class
@@ -11,11 +13,13 @@ com/smartcampus/model/Resource.class
 com/smartcampus/dto/response/ResourceResponse.class
 com/smartcampus/controller/AdminResourceController.class
 com/smartcampus/exception/GlobalExceptionHandler.class
+com/smartcampus/model/Booking.class
 com/smartcampus/dto/request/ApproveUserRequest.class
 com/smartcampus/service/ResourceService.class
 com/smartcampus/dto/response/AuthResponse.class
 com/smartcampus/model/AuthProvider.class
 com/smartcampus/service/AdminUserService.class
+com/smartcampus/repository/BookingRepository.class
 com/smartcampus/dto/response/UserResponse.class
 com/smartcampus/controller/AdminUserController.class
 com/smartcampus/service/AuthService.class
@@ -24,6 +28,7 @@ com/smartcampus/SmartCampusApplication.class
 com/smartcampus/repository/ResourceRepository.class
 com/smartcampus/security/jwt/JwtTokenProvider.class
 com/smartcampus/security/jwt/JwtAuthFilter.class
+com/smartcampus/controller/AdminBookingController.class
 com/smartcampus/model/ResourceStatus.class
 com/smartcampus/dto/request/RegisterRequest.class
 com/smartcampus/security/oauth2/OAuth2SuccessHandler.class
@@ -32,5 +37,6 @@ com/smartcampus/exception/ResourceNotFoundException.class
 com/smartcampus/dto/response/AdminUserResponse.class
 com/smartcampus/model/User.class
 com/smartcampus/exception/BadRequestException.class
+com/smartcampus/dto/request/BookingActionRequest.class
 com/smartcampus/repository/UserRepository.class
 com/smartcampus/config/AdminBootstrapSeeder.class
