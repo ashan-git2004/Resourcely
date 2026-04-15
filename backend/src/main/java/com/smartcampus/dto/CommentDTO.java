@@ -3,11 +3,14 @@ package com.smartcampus.dto;
 import java.time.Instant;
 
 public class CommentDTO {
+
     private String id;
     private String ticketId;
+    private String authorId;
     private String authorEmail;
     private String content;
     private Instant createdAt;
+    private Instant updatedAt;
 
     public CommentDTO() {
     }
@@ -26,6 +29,14 @@ public class CommentDTO {
 
     public void setTicketId(String ticketId) {
         this.ticketId = ticketId;
+    }
+
+    public String getAuthorId() {
+        return authorId;
+    }
+
+    public void setAuthorId(String authorId) {
+        this.authorId = authorId;
     }
 
     public String getAuthorEmail() {
@@ -50,5 +61,13 @@ public class CommentDTO {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

@@ -2,17 +2,20 @@ package com.smartcampus.dto;
 
 import com.smartcampus.model.TicketPriority;
 import com.smartcampus.model.TicketStatus;
-
 import java.time.Instant;
 
 public class TicketDTO {
+
     private String id;
     private String title;
     private String description;
+    private String category;
     private TicketStatus status;
     private TicketPriority priority;
+    private String ownerId;
     private String ownerEmail;
-    private String technicianEmail;
+    private String assignedTechnicianId;
+    private String assignedTechnicianEmail;
     private String resolutionNotes;
     private Instant createdAt;
     private Instant updatedAt;
@@ -48,6 +51,14 @@ public class TicketDTO {
         this.description = description;
     }
 
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     public TicketStatus getStatus() {
         return status;
     }
@@ -64,6 +75,14 @@ public class TicketDTO {
         this.priority = priority;
     }
 
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
     public String getOwnerEmail() {
         return ownerEmail;
     }
@@ -72,12 +91,20 @@ public class TicketDTO {
         this.ownerEmail = ownerEmail;
     }
 
-    public String getTechnicianEmail() {
-        return technicianEmail;
+    public String getAssignedTechnicianId() {
+        return assignedTechnicianId;
     }
 
-    public void setTechnicianEmail(String technicianEmail) {
-        this.technicianEmail = technicianEmail;
+    public void setAssignedTechnicianId(String assignedTechnicianId) {
+        this.assignedTechnicianId = assignedTechnicianId;
+    }
+
+    public String getAssignedTechnicianEmail() {
+        return assignedTechnicianEmail;
+    }
+
+    public void setAssignedTechnicianEmail(String assignedTechnicianEmail) {
+        this.assignedTechnicianEmail = assignedTechnicianEmail;
     }
 
     public String getResolutionNotes() {

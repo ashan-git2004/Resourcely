@@ -1,10 +1,8 @@
 package com.smartcampus.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.DBRef;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.time.Instant;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "comments")
 public class Comment {
@@ -14,8 +12,9 @@ public class Comment {
 
     private String ticketId;
 
-    @DBRef
-    private User author;
+    private String authorId;
+
+    private String authorEmail;
 
     private String content;
 
@@ -42,12 +41,20 @@ public class Comment {
         this.ticketId = ticketId;
     }
 
-    public User getAuthor() {
-        return author;
+    public String getAuthorId() {
+        return authorId;
     }
 
-    public void setAuthor(User author) {
-        this.author = author;
+    public void setAuthorId(String authorId) {
+        this.authorId = authorId;
+    }
+
+    public String getAuthorEmail() {
+        return authorEmail;
+    }
+
+    public void setAuthorEmail(String authorEmail) {
+        this.authorEmail = authorEmail;
     }
 
     public String getContent() {

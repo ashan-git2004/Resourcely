@@ -1,72 +1,114 @@
 package com.smartcampus.service;
 
 import com.smartcampus.dto.CommentDTO;
+import com.smartcampus.exception.BadRequestException;
+import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.model.Comment;
+import com.smartcampus.model.Ticket;
 import com.smartcampus.model.User;
+import com.smartcampus.model.UserRole;
 import com.smartcampus.repository.CommentRepository;
-import com.smartcampus.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
 
 @Service
 public class CommentService {
 
-    @Autowired
-    private CommentRepository commentRepository;
+    private final CommentRepository commentRepository;
+    private final TicketService ticketService;
 
-    @Autowired
-    private UserRepository userRepository;
+    public CommentService(CommentRepository commentRepository, TicketService ticketService) {
+        this.commentRepository = commentRepository;
+        this.ticketService = ticketService;
+    }
 
-    public List<CommentDTO> getCommentsByTicketId(String ticketId) {
+    public List<CommentDTO> getCommentsByTicketId(String ticketId, String currentUserEmail) {
+        User currentUser = ticketService.getUserByEmail(currentUserEmail);
+        Ticket ticket = ticketService.getTicketEntity(ticketId);
+        ticketService.validateTicketAccess(ticket, currentUser);
+
         return commentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public CommentDTO addComment(String ticketId, String authorEmail, String content) {
-        User author = userRepository.findByEmail(authorEmail)
-                .orElseThrow(() -> new RuntimeException("Author not found"));
+    public CommentDTO addComment(String ticketId, String currentUserEmail, String content) {
+        User currentUser = ticketService.getUserByEmail(currentUserEmail);
+        Ticket ticket = ticketService.getTicketEntity(ticketId);
+
+        if (!ticketService.canManageComments(ticket, currentUser)) {
+            throw new BadRequestException("You do not have access to comment on this ticket.");
+        }
 
         Comment comment = new Comment();
         comment.setTicketId(ticketId);
-        comment.setAuthor(author);
-        comment.setContent(content);
+        comment.setAuthorId(currentUser.getId());
+        comment.setAuthorEmail(currentUser.getEmail());
+        comment.setContent(content.trim());
         comment.setCreatedAt(Instant.now());
-        comment.setUpdatedAt(Instant.now());
+        comment.setUpdatedAt(comment.getCreatedAt());
 
         return convertToDTO(commentRepository.save(comment));
     }
 
-    public CommentDTO updateComment(String id, String content) {
-        Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+    public CommentDTO updateComment(String ticketId, String commentId, String currentUserEmail, String content) {
+        User currentUser = ticketService.getUserByEmail(currentUserEmail);
+        Ticket ticket = ticketService.getTicketEntity(ticketId);
+        Comment comment = getComment(commentId);
+        validateCommentTicket(ticketId, comment);
 
-        comment.setContent(content);
+        if (!canModifyComment(comment, currentUser, ticket)) {
+            throw new BadRequestException("You do not have permission to update this comment.");
+        }
+
+        comment.setContent(content.trim());
         comment.setUpdatedAt(Instant.now());
-
         return convertToDTO(commentRepository.save(comment));
     }
 
-    public void deleteComment(String id) {
-        commentRepository.deleteById(id);
+    public void deleteComment(String ticketId, String commentId, String currentUserEmail) {
+        User currentUser = ticketService.getUserByEmail(currentUserEmail);
+        Ticket ticket = ticketService.getTicketEntity(ticketId);
+        Comment comment = getComment(commentId);
+        validateCommentTicket(ticketId, comment);
+
+        if (!canModifyComment(comment, currentUser, ticket)) {
+            throw new BadRequestException("You do not have permission to delete this comment.");
+        }
+
+        commentRepository.delete(comment);
+    }
+
+    private Comment getComment(String commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found."));
+    }
+
+    private void validateCommentTicket(String ticketId, Comment comment) {
+        if (!ticketId.equals(comment.getTicketId())) {
+            throw new BadRequestException("Comment does not belong to the specified ticket.");
+        }
+    }
+
+    private boolean canModifyComment(Comment comment, User currentUser, Ticket ticket) {
+        return currentUser.getId().equals(comment.getAuthorId())
+                || currentUser.getRoles().contains(UserRole.ADMIN)
+                || currentUser.getRoles().contains(UserRole.MANAGER)
+                || currentUser.getId().equals(ticket.getAssignedTechnicianId());
     }
 
     private CommentDTO convertToDTO(Comment comment) {
         CommentDTO dto = new CommentDTO();
         dto.setId(comment.getId());
         dto.setTicketId(comment.getTicketId());
+        dto.setAuthorId(comment.getAuthorId());
+        dto.setAuthorEmail(comment.getAuthorEmail());
         dto.setContent(comment.getContent());
         dto.setCreatedAt(comment.getCreatedAt());
-
-        if (comment.getAuthor() != null) {
-            dto.setAuthorEmail(comment.getAuthor().getEmail());
-        }
-
+        dto.setUpdatedAt(comment.getUpdatedAt());
         return dto;
     }
 }

@@ -1,10 +1,8 @@
 package com.smartcampus.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.DBRef;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.time.Instant;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "tickets")
 public class Ticket {
@@ -16,19 +14,22 @@ public class Ticket {
 
     private String description;
 
-    private TicketStatus status = TicketStatus.OPEN;
+    private String category;
 
     private TicketPriority priority = TicketPriority.MEDIUM;
 
-    @DBRef
-    private User owner;
+    private TicketStatus status = TicketStatus.OPEN;
 
-    @DBRef
-    private User assignedTechnician;
+    private String ownerId;
+
+    private String ownerEmail;
+
+    private String assignedTechnicianId;
+
+    private String assignedTechnicianEmail;
 
     private String resolutionNotes;
 
-    // SLA Metrics
     private Instant createdAt = Instant.now();
 
     private Instant updatedAt = Instant.now();
@@ -68,12 +69,12 @@ public class Ticket {
         this.description = description;
     }
 
-    public TicketStatus getStatus() {
-        return status;
+    public String getCategory() {
+        return category;
     }
 
-    public void setStatus(TicketStatus status) {
-        this.status = status;
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public TicketPriority getPriority() {
@@ -84,20 +85,44 @@ public class Ticket {
         this.priority = priority;
     }
 
-    public User getOwner() {
-        return owner;
+    public TicketStatus getStatus() {
+        return status;
     }
 
-    public void setOwner(User owner) {
-        this.owner = owner;
+    public void setStatus(TicketStatus status) {
+        this.status = status;
     }
 
-    public User getAssignedTechnician() {
-        return assignedTechnician;
+    public String getOwnerId() {
+        return ownerId;
     }
 
-    public void setAssignedTechnician(User assignedTechnician) {
-        this.assignedTechnician = assignedTechnician;
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getOwnerEmail() {
+        return ownerEmail;
+    }
+
+    public void setOwnerEmail(String ownerEmail) {
+        this.ownerEmail = ownerEmail;
+    }
+
+    public String getAssignedTechnicianId() {
+        return assignedTechnicianId;
+    }
+
+    public void setAssignedTechnicianId(String assignedTechnicianId) {
+        this.assignedTechnicianId = assignedTechnicianId;
+    }
+
+    public String getAssignedTechnicianEmail() {
+        return assignedTechnicianEmail;
+    }
+
+    public void setAssignedTechnicianEmail(String assignedTechnicianEmail) {
+        this.assignedTechnicianEmail = assignedTechnicianEmail;
     }
 
     public String getResolutionNotes() {
