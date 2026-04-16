@@ -88,7 +88,7 @@ export default function TicketComments({ ticketId }) {
           disabled={submitting}
           rows={3}
         />
-        <button onClick={handleAddComment} disabled={submitting || !newComment.trim()} className="primary-btn">
+        <button onClick={handleAddComment} disabled={submitting || !newComment.trim()} className="primary-btn comment-submit-btn">
           {submitting ? "Posting..." : "Post comment"}
         </button>
       </div>
@@ -120,10 +120,10 @@ export default function TicketComments({ ticketId }) {
                     rows={3}
                   />
                   <div className="comment-actions">
-                    <button onClick={handleUpdateComment} className="action-link" disabled={submitting}>
+                    <button onClick={handleUpdateComment} className="comment-action-btn comment-action-btn-primary" disabled={submitting}>
                       Save
                     </button>
-                    <button onClick={() => setEditingCommentId(null)} className="action-link" disabled={submitting}>
+                    <button onClick={() => setEditingCommentId(null)} className="comment-action-btn" disabled={submitting}>
                       Cancel
                     </button>
                   </div>
@@ -138,11 +138,11 @@ export default function TicketComments({ ticketId }) {
                           setEditingCommentId(comment.id);
                           setEditingContent(comment.content);
                         }}
-                        className="action-link"
+                        className="comment-action-btn"
                       >
                         Edit
                       </button>
-                      <button onClick={() => handleDeleteComment(comment.id)} className="action-link action-link-danger">
+                      <button onClick={() => handleDeleteComment(comment.id)} className="comment-action-btn comment-action-btn-danger">
                         Delete
                       </button>
                     </div>

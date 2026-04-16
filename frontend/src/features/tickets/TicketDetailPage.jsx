@@ -144,38 +144,40 @@ export default function TicketDetailPage() {
         {isTechnicianView && (
           <footer className="form-section">
             <h3 style={{ marginTop: 0 }}>Update Ticket Status</h3>
-            <div className="filter-controls" style={{ marginTop: "0.5rem" }}>
-              {allowedTransitions.map((newStatus) => (
-                <button
-                  key={newStatus}
-                  onClick={() => handleStatusUpdate(newStatus)}
-                  disabled={updating}
-                  className="primary-btn"
-                >
-                  Mark as {newStatus.replace("_", " ")}
-                </button>
-              ))}
-              {allowedTransitions.length === 0 && (
-                <p className="muted" style={{ margin: 0 }}>No further status transitions available.</p>
-              )}
-            </div>
+            <div className="ticket-control-row">
+              <div className="status-action-group">
+                {allowedTransitions.map((newStatus) => (
+                  <button
+                    key={newStatus}
+                    onClick={() => handleStatusUpdate(newStatus)}
+                    disabled={updating}
+                    className="primary-btn compact-primary-btn"
+                  >
+                    Mark as {newStatus.replace("_", " ")}
+                  </button>
+                ))}
+                {allowedTransitions.length === 0 && (
+                  <p className="muted" style={{ margin: 0 }}>No further status transitions available.</p>
+                )}
+              </div>
 
-            <div className="compact-priority-editor">
-              <label htmlFor="ticket-priority">Priority</label>
-              <select
-                className="compact-select"
-                id="ticket-priority"
-                value={selectedPriority}
-                onChange={(e) => setSelectedPriority(e.target.value)}
-                disabled={updating}
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-              </select>
-              <button onClick={handlePriorityUpdate} disabled={updating} className="ghost-btn compact-action-btn">
-                Update priority
-              </button>
+              <div className="compact-priority-editor">
+                <label htmlFor="ticket-priority">Priority</label>
+                <select
+                  className="compact-select"
+                  id="ticket-priority"
+                  value={selectedPriority}
+                  onChange={(e) => setSelectedPriority(e.target.value)}
+                  disabled={updating}
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                </select>
+                <button onClick={handlePriorityUpdate} disabled={updating} className="ghost-btn compact-action-btn">
+                  Update priority
+                </button>
+              </div>
             </div>
           </footer>
         )}

@@ -793,6 +793,7 @@ a[aria-disabled="true"] {
   display: flex;
   gap: 0.55rem;
   margin-top: 0.45rem;
+  flex-wrap: wrap;
 }
 
 .action-link {
@@ -807,6 +808,52 @@ a[aria-disabled="true"] {
 
 .action-link-danger {
   color: var(--danger-ink);
+}
+
+.comment-submit-btn {
+  min-height: 40px;
+  padding: 0.72rem 1rem;
+}
+
+.comment-action-btn {
+  min-height: 32px;
+  padding: 0.38rem 0.78rem;
+  border-radius: 999px;
+  border: 1px solid #d8e4f2;
+  background: #f7fbff;
+  color: #33506f;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.comment-action-btn:hover:not(:disabled) {
+  background: #eef5fd;
+  border-color: #bfd3ea;
+  color: #17385c;
+}
+
+.comment-action-btn-primary {
+  background: #e9f3ff;
+  border-color: #bfd8f4;
+  color: var(--brand-strong);
+}
+
+.comment-action-btn-primary:hover:not(:disabled) {
+  background: #dcebff;
+  border-color: #a9caef;
+}
+
+.comment-action-btn-danger {
+  background: #fff4f6;
+  border-color: #f3c7d0;
+  color: var(--danger-ink);
+}
+
+.comment-action-btn-danger:hover:not(:disabled) {
+  background: #ffecef;
+  border-color: #eeb4c0;
 }
 
 .notif-bell-container {
@@ -925,12 +972,35 @@ a[aria-disabled="true"] {
   padding-top: 1rem;
 }
 
+.ticket-control-row {
+  margin-top: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.status-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  flex: 1 1 320px;
+}
+
+.compact-primary-btn {
+  min-height: 38px;
+  padding: 0.56rem 0.92rem;
+}
+
 .compact-priority-editor {
-  margin-top: 1rem;
   display: flex;
   align-items: center;
   gap: 0.55rem;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: 0 1 auto;
 }
 
 .compact-priority-editor label {
@@ -1140,11 +1210,17 @@ a[aria-disabled="true"] {
 
   .compact-priority-editor {
     align-items: stretch;
+    justify-content: stretch;
   }
 
   .compact-select,
   .compact-action-btn {
     width: 100%;
+  }
+
+  .ticket-control-row,
+  .status-action-group {
+    align-items: stretch;
   }
 
   .ops-header,
