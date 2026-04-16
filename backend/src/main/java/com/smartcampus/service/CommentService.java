@@ -6,7 +6,6 @@ import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.model.Comment;
 import com.smartcampus.model.Ticket;
 import com.smartcampus.model.User;
-import com.smartcampus.model.UserRole;
 import com.smartcampus.repository.CommentRepository;
 import java.time.Instant;
 import java.util.List;
@@ -57,10 +56,11 @@ public class CommentService {
     public CommentDTO updateComment(String ticketId, String commentId, String currentUserEmail, String content) {
         User currentUser = ticketService.getUserByEmail(currentUserEmail);
         Ticket ticket = ticketService.getTicketEntity(ticketId);
+        ticketService.validateTicketAccess(ticket, currentUser);
         Comment comment = getComment(commentId);
         validateCommentTicket(ticketId, comment);
 
-        if (!canModifyComment(comment, currentUser, ticket)) {
+        if (!isCommentOwner(comment, currentUser)) {
             throw new BadRequestException("You do not have permission to update this comment.");
         }
 
@@ -72,10 +72,11 @@ public class CommentService {
     public void deleteComment(String ticketId, String commentId, String currentUserEmail) {
         User currentUser = ticketService.getUserByEmail(currentUserEmail);
         Ticket ticket = ticketService.getTicketEntity(ticketId);
+        ticketService.validateTicketAccess(ticket, currentUser);
         Comment comment = getComment(commentId);
         validateCommentTicket(ticketId, comment);
 
-        if (!canModifyComment(comment, currentUser, ticket)) {
+        if (!isCommentOwner(comment, currentUser)) {
             throw new BadRequestException("You do not have permission to delete this comment.");
         }
 
@@ -93,11 +94,8 @@ public class CommentService {
         }
     }
 
-    private boolean canModifyComment(Comment comment, User currentUser, Ticket ticket) {
-        return currentUser.getId().equals(comment.getAuthorId())
-                || currentUser.getRoles().contains(UserRole.ADMIN)
-                || currentUser.getRoles().contains(UserRole.MANAGER)
-                || currentUser.getId().equals(ticket.getAssignedTechnicianId());
+    private boolean isCommentOwner(Comment comment, User currentUser) {
+        return currentUser.getId().equals(comment.getAuthorId());
     }
 
     private CommentDTO convertToDTO(Comment comment) {

@@ -71,6 +71,10 @@ export default function TicketComments({ ticketId }) {
     }
   }
 
+  function isOwnComment(comment) {
+    return comment.authorEmail === auth?.email;
+  }
+
   return (
     <section className="card">
       <h2 style={{ marginTop: 0 }}>Comments</h2>
@@ -98,11 +102,11 @@ export default function TicketComments({ ticketId }) {
           comments.map((comment) => (
             <div
               key={comment.id}
-              className={`comment-item ${comment.author?.email === auth?.email ? "comment-mine" : ""}`}
+              className={`comment-item ${isOwnComment(comment) ? "comment-mine" : ""}`}
             >
               <div className="comment-header">
                 <span className="comment-author">
-                  {comment.author?.email} {comment.author?.email === auth?.email && "(You)"}
+                  {comment.authorEmail} {isOwnComment(comment) && "(You)"}
                 </span>
                 <span className="comment-date">{new Date(comment.createdAt).toLocaleString()}</span>
               </div>
@@ -127,7 +131,7 @@ export default function TicketComments({ ticketId }) {
               ) : (
                 <>
                   <div>{comment.content}</div>
-                  {comment.author?.email === auth?.email && (
+                  {isOwnComment(comment) && (
                     <div className="comment-actions">
                       <button
                         onClick={() => {
