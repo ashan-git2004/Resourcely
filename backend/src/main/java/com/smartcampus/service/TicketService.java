@@ -2,7 +2,7 @@ package com.smartcampus.service;
 
 import com.smartcampus.dto.TicketDTO;
 import com.smartcampus.dto.request.CreateTicketRequest;
-import com.smartcampus.dto.request.UpdateResolutionRequest;
+import com.smartcampus.dto.request.UpdateTicketPriorityRequest;
 import com.smartcampus.dto.request.UpdateTicketStatusRequest;
 import com.smartcampus.exception.BadRequestException;
 import com.smartcampus.exception.ResourceNotFoundException;
@@ -158,20 +158,20 @@ public class TicketService {
         return convertToDTO(savedTicket);
     }
 
-    public TicketDTO updateResolution(
+    public TicketDTO updateTicketPriority(
             String ticketId,
-            UpdateResolutionRequest request,
+            UpdateTicketPriorityRequest request,
             String currentUserEmail
     ) {
         User technician = getTechnicianByEmail(currentUserEmail);
         Ticket ticket = getTicketEntity(ticketId);
         validateTechnicianAssignment(ticket, technician);
 
-        ticket.setResolutionNotes(request.getResolutionNotes().trim());
+        ticket.setPriority(request.toTicketPriority());
         ticket.setUpdatedAt(Instant.now());
 
         Ticket savedTicket = ticketRepository.save(ticket);
-        notifyOwnerOnUpdate(savedTicket, "Resolution notes updated", "Resolution notes were updated for your ticket.");
+        notifyOwnerOnUpdate(savedTicket, "Ticket priority updated", "Your ticket priority is now " + savedTicket.getPriority() + ".");
         return convertToDTO(savedTicket);
     }
 
@@ -261,7 +261,6 @@ public class TicketService {
         dto.setOwnerEmail(ticket.getOwnerEmail());
         dto.setAssignedTechnicianId(ticket.getAssignedTechnicianId());
         dto.setAssignedTechnicianEmail(ticket.getAssignedTechnicianEmail());
-        dto.setResolutionNotes(ticket.getResolutionNotes());
         dto.setCreatedAt(ticket.getCreatedAt());
         dto.setUpdatedAt(ticket.getUpdatedAt());
         dto.setFirstResponseAt(ticket.getFirstResponseAt());

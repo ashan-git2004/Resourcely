@@ -16,7 +16,6 @@ public class TicketDTO {
     private String ownerEmail;
     private String assignedTechnicianId;
     private String assignedTechnicianEmail;
-    private String resolutionNotes;
     private Instant createdAt;
     private Instant updatedAt;
     private Instant firstResponseAt;
@@ -105,14 +104,6 @@ public class TicketDTO {
 
     public void setAssignedTechnicianEmail(String assignedTechnicianEmail) {
         this.assignedTechnicianEmail = assignedTechnicianEmail;
-    }
-
-    public String getResolutionNotes() {
-        return resolutionNotes;
-    }
-
-    public void setResolutionNotes(String resolutionNotes) {
-        this.resolutionNotes = resolutionNotes;
     }
 
     public Instant getCreatedAt() {

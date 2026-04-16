@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import TicketComments from "./TicketComments";
-import { getTicketDetail, updateResolutionNotes, updateTicketStatus } from "./ticketService";
+import { getTicketDetail, updateTicketPriority, updateTicketStatus } from "./ticketService";
 
 export default function TicketDetailPage() {
   const { ticketId } = useParams();
@@ -11,7 +11,7 @@ export default function TicketDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [resolutionNotes, setResolutionNotes] = useState("");
+  const [selectedPriority, setSelectedPriority] = useState("MEDIUM");
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
@@ -21,9 +21,9 @@ export default function TicketDetailPage() {
   async function loadTicket() {
     try {
       setLoading(true);
-      const data = await getTicketDetail(ticketId, auth.token);
+      const data = await getTicketDetail(ticketId, auth.token, auth.roles);
       setTicket(data);
-      setResolutionNotes(data.resolutionNotes || "");
+      setSelectedPriority(data.priority || "MEDIUM");
       setError("");
     } catch (err) {
       setError(err.message);
@@ -47,13 +47,13 @@ export default function TicketDetailPage() {
     }
   }
 
-  async function handleResolutionNotesUpdate() {
+  async function handlePriorityUpdate() {
     try {
       setUpdating(true);
       setError("");
       setSuccess("");
-      await updateResolutionNotes(ticketId, resolutionNotes, auth.token);
-      setSuccess("Resolution notes updated successfully.");
+      await updateTicketPriority(ticketId, selectedPriority, auth.token);
+      setSuccess(`Priority updated to ${selectedPriority}.`);
       loadTicket();
     } catch (err) {
       setError(err.message);
@@ -71,14 +71,18 @@ export default function TicketDetailPage() {
       REJECTED: [],
     }[ticket?.status] || [];
 
+  const isTechnicianView = (auth?.roles || []).includes("TECHNICIAN");
+  const backLink = isTechnicianView ? "/technician/tickets" : "/dashboard/student";
+  const backLabel = isTechnicianView ? "Back to assigned tickets" : "Back to dashboard";
+
   if (loading && !ticket) return <div className="layout">Loading ticket details...</div>;
 
   if (error && !ticket) {
     return (
       <div className="layout">
         <div className="alert">{error}</div>
-        <Link to="/technician/tickets" className="text-link">
-          Back to tickets
+        <Link to={backLink} className="text-link">
+          {backLabel}
         </Link>
       </div>
     );
@@ -87,8 +91,8 @@ export default function TicketDetailPage() {
   return (
     <div className="page-container" style={{ maxWidth: "920px" }}>
       <div style={{ marginBottom: "0.8rem" }}>
-        <Link to="/technician/tickets" className="text-link">
-          Back to assigned tickets
+        <Link to={backLink} className="text-link">
+          {backLabel}
         </Link>
       </div>
 
@@ -107,11 +111,11 @@ export default function TicketDetailPage() {
         <section className="resource-details-grid">
           <div className="info-row">
             <label>Reporter</label>
-            <span>{ticket?.owner?.email}</span>
+            <span>{ticket?.ownerEmail}</span>
           </div>
           <div className="info-row">
             <label>Assigned technician</label>
-            <span>{ticket?.assignedTechnician?.email || "Unassigned"}</span>
+            <span>{ticket?.assignedTechnicianEmail || "Unassigned"}</span>
           </div>
           <div className="info-row">
             <label>Description</label>
@@ -137,38 +141,44 @@ export default function TicketDetailPage() {
         {error && <div className="alert" style={{ marginTop: "0.9rem" }}>{error}</div>}
         {success && <div className="success" style={{ marginTop: "0.9rem" }}>{success}</div>}
 
-        <footer className="form-section">
-          <h3 style={{ marginTop: 0 }}>Update Ticket Status</h3>
-          <div className="filter-controls" style={{ marginTop: "0.5rem" }}>
-            {allowedTransitions.map((newStatus) => (
-              <button
-                key={newStatus}
-                onClick={() => handleStatusUpdate(newStatus)}
-                disabled={updating}
-                className="primary-btn"
-              >
-                Mark as {newStatus.replace("_", " ")}
-              </button>
-            ))}
-            {allowedTransitions.length === 0 && (
-              <p className="muted" style={{ margin: 0 }}>No further status transitions available.</p>
-            )}
-          </div>
+        {isTechnicianView && (
+          <footer className="form-section">
+            <h3 style={{ marginTop: 0 }}>Update Ticket Status</h3>
+            <div className="filter-controls" style={{ marginTop: "0.5rem" }}>
+              {allowedTransitions.map((newStatus) => (
+                <button
+                  key={newStatus}
+                  onClick={() => handleStatusUpdate(newStatus)}
+                  disabled={updating}
+                  className="primary-btn"
+                >
+                  Mark as {newStatus.replace("_", " ")}
+                </button>
+              ))}
+              {allowedTransitions.length === 0 && (
+                <p className="muted" style={{ margin: 0 }}>No further status transitions available.</p>
+              )}
+            </div>
 
-          <div style={{ marginTop: "1rem" }}>
-            <label htmlFor="resolution-notes">Resolution notes</label>
-            <textarea
-              id="resolution-notes"
-              value={resolutionNotes}
-              onChange={(e) => setResolutionNotes(e.target.value)}
-              placeholder="Document findings, actions taken, and final outcome"
-              rows={4}
-            />
-            <button onClick={handleResolutionNotesUpdate} disabled={updating} className="ghost-btn" style={{ marginTop: "0.5rem" }}>
-              Save resolution notes
-            </button>
-          </div>
-        </footer>
+            <div className="compact-priority-editor">
+              <label htmlFor="ticket-priority">Priority</label>
+              <select
+                className="compact-select"
+                id="ticket-priority"
+                value={selectedPriority}
+                onChange={(e) => setSelectedPriority(e.target.value)}
+                disabled={updating}
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </select>
+              <button onClick={handlePriorityUpdate} disabled={updating} className="ghost-btn compact-action-btn">
+                Update priority
+              </button>
+            </div>
+          </footer>
+        )}
       </section>
 
       <section style={{ marginTop: "1rem" }}>

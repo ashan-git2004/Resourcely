@@ -6,6 +6,7 @@ import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.model.Comment;
 import com.smartcampus.model.Ticket;
 import com.smartcampus.model.User;
+import com.smartcampus.model.UserRole;
 import com.smartcampus.repository.CommentRepository;
 import java.time.Instant;
 import java.util.List;
@@ -17,10 +18,16 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final TicketService ticketService;
+    private final NotificationService notificationService;
 
-    public CommentService(CommentRepository commentRepository, TicketService ticketService) {
+    public CommentService(
+            CommentRepository commentRepository,
+            TicketService ticketService,
+            NotificationService notificationService
+    ) {
         this.commentRepository = commentRepository;
         this.ticketService = ticketService;
+        this.notificationService = notificationService;
     }
 
     public List<CommentDTO> getCommentsByTicketId(String ticketId, String currentUserEmail) {
@@ -50,7 +57,9 @@ public class CommentService {
         comment.setCreatedAt(Instant.now());
         comment.setUpdatedAt(comment.getCreatedAt());
 
-        return convertToDTO(commentRepository.save(comment));
+        Comment savedComment = commentRepository.save(comment);
+        notifyCommentParticipants(ticket, currentUser, savedComment);
+        return convertToDTO(savedComment);
     }
 
     public CommentDTO updateComment(String ticketId, String commentId, String currentUserEmail, String content) {
@@ -96,6 +105,29 @@ public class CommentService {
 
     private boolean isCommentOwner(Comment comment, User currentUser) {
         return currentUser.getId().equals(comment.getAuthorId());
+    }
+
+    private void notifyCommentParticipants(Ticket ticket, User commentAuthor, Comment comment) {
+        boolean authorIsTechnician = commentAuthor.getRoles().contains(UserRole.TECHNICIAN);
+
+        if (authorIsTechnician && ticket.getOwnerId() != null && !ticket.getOwnerId().equals(commentAuthor.getId())) {
+            notificationService.createNotification(
+                    ticket.getOwnerId(),
+                    "New technician comment",
+                    commentAuthor.getEmail() + " commented on your ticket: " + ticket.getTitle(),
+                    ticket.getId()
+            );
+        }
+
+        if (ticket.getAssignedTechnicianId() != null
+                && !ticket.getAssignedTechnicianId().equals(commentAuthor.getId())) {
+            notificationService.createNotification(
+                    ticket.getAssignedTechnicianId(),
+                    "New comment on assigned ticket",
+                    commentAuthor.getEmail() + " added a comment on ticket: " + ticket.getTitle(),
+                    ticket.getId()
+            );
+        }
     }
 
     private CommentDTO convertToDTO(Comment comment) {

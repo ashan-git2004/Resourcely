@@ -45,7 +45,7 @@ export default function TechnicianTicketsPage() {
       case "oldest":
         return new Date(a.createdAt) - new Date(b.createdAt);
       case "priority": {
-        const priorityOrder = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+        const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
         return priorityOrder[a.priority] - priorityOrder[b.priority];
       }
       case "newest":
@@ -92,7 +92,6 @@ export default function TechnicianTicketsPage() {
             <option value="LOW">Low</option>
             <option value="MEDIUM">Medium</option>
             <option value="HIGH">High</option>
-            <option value="URGENT">Urgent</option>
           </select>
 
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="filter-select">
@@ -118,8 +117,8 @@ export default function TechnicianTicketsPage() {
             <span className="stat-value">{tickets.filter((t) => t.status === "IN_PROGRESS").length}</span>
           </div>
           <div className="stat-item">
-            <span className="stat-label">Urgent</span>
-            <span className="stat-value urgent">{tickets.filter((t) => t.priority === "URGENT").length}</span>
+            <span className="stat-label">High</span>
+            <span className="stat-value">{tickets.filter((t) => t.priority === "HIGH").length}</span>
           </div>
         </div>
       )}

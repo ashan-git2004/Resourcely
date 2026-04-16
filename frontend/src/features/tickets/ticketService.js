@@ -35,8 +35,15 @@ export function getAssignedTickets(token, filters = {}) {
   return request("GET", `/api/technician/tickets${query}`, { token });
 }
 
-export function getTicketDetail(ticketId, token) {
-  return request("GET", `/api/technician/tickets/${ticketId}`, { token });
+export function getTicketDetail(ticketId, token, roles = []) {
+  const canUseTechnicianEndpoint =
+    Array.isArray(roles) && roles.includes("TECHNICIAN");
+
+  const path = canUseTechnicianEndpoint
+    ? `/api/technician/tickets/${ticketId}`
+    : `/api/tickets/${ticketId}`;
+
+  return request("GET", path, { token });
 }
 
 export function updateTicketStatus(ticketId, status, token) {
@@ -46,9 +53,9 @@ export function updateTicketStatus(ticketId, status, token) {
   });
 }
 
-export function updateResolutionNotes(ticketId, resolutionNotes, token) {
-  return request("PATCH", `/api/technician/tickets/${ticketId}/resolution`, {
-    payload: { resolutionNotes },
+export function updateTicketPriority(ticketId, priority, token) {
+  return request("PATCH", `/api/technician/tickets/${ticketId}/priority`, {
+    payload: { priority },
     token,
   });
 }

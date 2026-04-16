@@ -34,7 +34,7 @@ export default function TechnicianDashboard() {
 
   const openCount = tickets.filter((t) => t.status === "OPEN").length;
   const inProgressCount = tickets.filter((t) => t.status === "IN_PROGRESS").length;
-  const urgentCount = tickets.filter((t) => t.priority === "URGENT").length;
+  const highCount = tickets.filter((t) => t.priority === "HIGH").length;
   const completionRate =
     tickets.length > 0
       ? Math.round(
@@ -71,10 +71,10 @@ export default function TechnicianDashboard() {
             <span className="stat-num">{inProgressCount}</span>
             <span className="stat-helper">Actively handled</span>
           </div>
-          <div className="glass-card urgent">
-            <span className="stat-desc" style={{ color: "var(--danger-ink)" }}>Urgent</span>
-            <span className="stat-num" style={{ color: "var(--danger-ink)" }}>{urgentCount}</span>
-            <span className="stat-helper">Requires immediate attention</span>
+          <div className="glass-card">
+            <span className="stat-desc">High priority</span>
+            <span className="stat-num">{highCount}</span>
+            <span className="stat-helper">Needs closer attention</span>
           </div>
           <div className="glass-card">
             <span className="stat-desc">Completion</span>
@@ -134,7 +134,6 @@ export default function TechnicianDashboard() {
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
               <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
             </select>
           </div>
         </div>

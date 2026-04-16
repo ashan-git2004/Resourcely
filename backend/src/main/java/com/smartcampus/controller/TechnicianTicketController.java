@@ -1,7 +1,7 @@
 package com.smartcampus.controller;
 
 import com.smartcampus.dto.TicketDTO;
-import com.smartcampus.dto.request.UpdateResolutionRequest;
+import com.smartcampus.dto.request.UpdateTicketPriorityRequest;
 import com.smartcampus.dto.request.UpdateTicketStatusRequest;
 import com.smartcampus.model.TicketPriority;
 import com.smartcampus.model.TicketStatus;
@@ -58,13 +58,13 @@ public class TechnicianTicketController {
         return ResponseEntity.ok(ticketService.updateTicketStatus(ticketId, request, authentication.getName()));
     }
 
-    @PatchMapping("/{ticketId}/resolution")
+    @PatchMapping("/{ticketId}/priority")
     @PreAuthorize("hasRole('TECHNICIAN')")
-    public ResponseEntity<TicketDTO> updateResolution(
+    public ResponseEntity<TicketDTO> updatePriority(
             @PathVariable String ticketId,
-            @Valid @RequestBody UpdateResolutionRequest request,
+            @Valid @RequestBody UpdateTicketPriorityRequest request,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(ticketService.updateResolution(ticketId, request, authentication.getName()));
+        return ResponseEntity.ok(ticketService.updateTicketPriority(ticketId, request, authentication.getName()));
     }
 }
