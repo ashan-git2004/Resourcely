@@ -44,6 +44,11 @@ public class Booking {
     private String purpose;
 
     /**
+     * Expected number of attendees for this booking (optional).
+     */
+    private Integer expectedAttendees;
+
+    /**
      * Reason provided by admin for approval/rejection.
      */
     private String adminReason;
@@ -144,6 +149,14 @@ public class Booking {
 
     public void setPurpose(String purpose) {
         this.purpose = purpose;
+    }
+
+    public Integer getExpectedAttendees() {
+        return expectedAttendees;
+    }
+
+    public void setExpectedAttendees(Integer expectedAttendees) {
+        this.expectedAttendees = expectedAttendees;
     }
 
     public String getAdminReason() {
