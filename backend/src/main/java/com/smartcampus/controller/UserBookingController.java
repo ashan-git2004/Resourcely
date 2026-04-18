@@ -3,6 +3,7 @@ package com.smartcampus.controller;
 import com.smartcampus.dto.request.CreateBookingRequest;
 import com.smartcampus.dto.request.UpdateBookingRequest;
 import com.smartcampus.model.Booking;
+import com.smartcampus.model.BookingStatus;
 import com.smartcampus.service.BookingService;
 import jakarta.validation.Valid;
 import java.time.Instant;
@@ -66,9 +67,20 @@ public class UserBookingController {
      * @return ResponseEntity with HTTP 200 (OK) and list of user's bookings
      */
     @GetMapping
-    public ResponseEntity<List<Booking>> getUserBookings(Authentication authentication) {
+    public ResponseEntity<List<Booking>> getUserBookings(
+            @RequestParam(required = false) BookingStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate,
+            @RequestParam(required = false) String resourceType,
+            @RequestParam(required = false) String location,
+            Authentication authentication) {
         String userId = authentication.getName();
-        List<Booking> bookings = bookingService.getUserBookings(userId);
+        boolean hasFilter = status != null || startDate != null || endDate != null
+                || (resourceType != null && !resourceType.isBlank())
+                || (location != null && !location.isBlank());
+        List<Booking> bookings = hasFilter
+                ? bookingService.getUserBookingsWithFilters(userId, status, startDate, endDate, resourceType, location)
+                : bookingService.getUserBookings(userId);
         return ResponseEntity.ok(bookings);
     }
 

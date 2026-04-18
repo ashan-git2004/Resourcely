@@ -46,8 +46,17 @@ export function createBooking(payload, token) {
   return request("POST", "/api/user/bookings", { payload, token });
 }
 
-export function getUserBookings(token) {
-  return request("GET", "/api/user/bookings", { token });
+export function getUserBookings(filters, token) {
+  if (!filters || typeof filters === "string") {
+    // backwards-compat: called as getUserBookings(token)
+    return request("GET", "/api/user/bookings", { token: filters || token });
+  }
+  const params = Object.entries(filters)
+    .filter(([, v]) => v != null && v !== "")
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join("&");
+  const url = params ? `/api/user/bookings?${params}` : "/api/user/bookings";
+  return request("GET", url, { token });
 }
 
 export function getBooking(bookingId, token) {

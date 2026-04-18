@@ -1,23 +1,35 @@
 package com.smartcampus.service;
 
+import com.smartcampus.dto.request.UpdateBookingRequest;
 import com.smartcampus.exception.BadRequestException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.model.Booking;
 import com.smartcampus.model.BookingStatus;
+import com.smartcampus.model.Resource;
 import com.smartcampus.repository.BookingRepository;
-import com.smartcampus.dto.request.UpdateBookingRequest;
+import com.smartcampus.repository.ResourceRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 @Service
 public class BookingService {
 
     private final BookingRepository bookingRepository;
+    private final ResourceRepository resourceRepository;
+    private final MongoTemplate mongoTemplate;
 
-    public BookingService(BookingRepository bookingRepository) {
+    public BookingService(BookingRepository bookingRepository,
+                          ResourceRepository resourceRepository,
+                          MongoTemplate mongoTemplate) {
         this.bookingRepository = bookingRepository;
+        this.resourceRepository = resourceRepository;
+        this.mongoTemplate = mongoTemplate;
     }
 
     // ===== USER OPERATIONS =====
@@ -53,6 +65,44 @@ public class BookingService {
      */
     public List<Booking> getUserBookings(String userId) {
         return bookingRepository.findByUserId(userId);
+    }
+
+    /**
+     * Get user's bookings with optional filters: status, date range, resource type, location.
+     */
+    public List<Booking> getUserBookingsWithFilters(String userId, BookingStatus status,
+            Instant startDate, Instant endDate, String resourceType, String location) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId));
+
+        if (status != null) {
+            query.addCriteria(Criteria.where("status").is(status));
+        }
+        if (startDate != null) {
+            query.addCriteria(Criteria.where("startTime").gte(startDate));
+        }
+        if (endDate != null) {
+            query.addCriteria(Criteria.where("endTime").lte(endDate));
+        }
+
+        // Filter by resource type or location — resolve matching resourceIds first
+        if ((resourceType != null && !resourceType.isBlank())
+                || (location != null && !location.isBlank())) {
+            Query resQuery = new Query();
+            if (resourceType != null && !resourceType.isBlank()) {
+                resQuery.addCriteria(Criteria.where("type").regex(resourceType, "i"));
+            }
+            if (location != null && !location.isBlank()) {
+                resQuery.addCriteria(Criteria.where("location").regex(location, "i"));
+            }
+            Set<String> resourceIds = mongoTemplate.find(resQuery, Resource.class)
+                    .stream()
+                    .map(Resource::getId)
+                    .collect(Collectors.toSet());
+            query.addCriteria(Criteria.where("resourceId").in(resourceIds));
+        }
+
+        return mongoTemplate.find(query, Booking.class);
     }
 
     /**
