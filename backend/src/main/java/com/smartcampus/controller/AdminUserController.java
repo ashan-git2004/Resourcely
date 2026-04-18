@@ -2,10 +2,12 @@ package com.smartcampus.controller;
 
 import com.smartcampus.dto.request.ApproveUserRequest;
 import com.smartcampus.dto.response.AdminUserResponse;
+import com.smartcampus.model.UserRole;
 import com.smartcampus.service.AdminUserService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,6 +54,12 @@ public class AdminUserController {
     @GetMapping("/pending")
     public ResponseEntity<List<AdminUserResponse>> getPendingUsers() {
         return ResponseEntity.ok(adminUserService.listPendingUsers());
+    }
+
+    @GetMapping("/technicians")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AdminUserResponse>> getTechnicians() {
+        return ResponseEntity.ok(adminUserService.listByRole(UserRole.TECHNICIAN));
     }
 
     /**
