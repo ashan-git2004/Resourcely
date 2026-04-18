@@ -14,6 +14,7 @@ import RegisterPage from "../features/auth/RegisterPage";
 import StudentDashboard from "../features/auth/StudentDashboard";
 import TechnicianDashboard from "../features/auth/TechnicianDashboard";
 import UserBookingsPage from "../features/user/UserBookingsPage";
+import UserTicketsPage from "../features/user/UserTicketsPage";
 import ProtectedRoute from "./ProtectedRoute";
 
 function HomeGate() {
@@ -125,6 +126,14 @@ export default function AppRouter() {
             element={
               <ProtectedRoute allowedRoles={["USER", "ADMIN"]}>
                 <UserBookingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/student/tickets"
+            element={
+              <ProtectedRoute allowedRoles={["USER", "ADMIN"]}>
+                <UserTicketsPage />
               </ProtectedRoute>
             }
           />

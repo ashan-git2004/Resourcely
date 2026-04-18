@@ -10,6 +10,7 @@ public class CreateTicketRequest {
     private TicketPriority priority;
     private String resourceId;
     private String location;
+    private String preferredContact;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -28,4 +29,7 @@ public class CreateTicketRequest {
 
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+
+    public String getPreferredContact() { return preferredContact; }
+    public void setPreferredContact(String preferredContact) { this.preferredContact = preferredContact; }
 }

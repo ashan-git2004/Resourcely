@@ -2,16 +2,20 @@ package com.smartcampus.service;
 
 import com.smartcampus.dto.request.CreateTicketRequest;
 import com.smartcampus.dto.request.UpdateTicketRequest;
+import com.smartcampus.dto.request.UpdateUserTicketRequest;
+import com.smartcampus.dto.response.AttachmentMetaResponse;
 import com.smartcampus.exception.BadRequestException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.model.Resource;
 import com.smartcampus.model.Ticket;
+import com.smartcampus.model.TicketAttachment;
 import com.smartcampus.model.TicketCategory;
 import com.smartcampus.model.TicketPriority;
 import com.smartcampus.model.TicketStatus;
 import com.smartcampus.model.User;
 import com.smartcampus.model.UserRole;
 import com.smartcampus.repository.ResourceRepository;
+import com.smartcampus.repository.TicketAttachmentRepository;
 import com.smartcampus.repository.TicketRepository;
 import com.smartcampus.repository.UserRepository;
 import java.time.Instant;
@@ -28,6 +32,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class TicketService {
 
+    private static final int MAX_ATTACHMENTS = 3;
+
     private static final Map<TicketStatus, Set<TicketStatus>> ALLOWED_TRANSITIONS = Map.of(
             TicketStatus.OPEN, EnumSet.of(TicketStatus.IN_PROGRESS, TicketStatus.REJECTED, TicketStatus.CLOSED),
             TicketStatus.IN_PROGRESS, EnumSet.of(TicketStatus.RESOLVED, TicketStatus.REJECTED, TicketStatus.CLOSED),
@@ -37,15 +43,18 @@ public class TicketService {
     );
 
     private final TicketRepository ticketRepository;
+    private final TicketAttachmentRepository attachmentRepository;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
     private final MongoTemplate mongoTemplate;
 
     public TicketService(TicketRepository ticketRepository,
+                         TicketAttachmentRepository attachmentRepository,
                          UserRepository userRepository,
                          ResourceRepository resourceRepository,
                          MongoTemplate mongoTemplate) {
         this.ticketRepository = ticketRepository;
+        this.attachmentRepository = attachmentRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
         this.mongoTemplate = mongoTemplate;
@@ -73,6 +82,7 @@ public class TicketService {
         ticket.setCategory(req.getCategory());
         ticket.setPriority(req.getPriority() != null ? req.getPriority() : TicketPriority.MEDIUM);
         ticket.setLocation(req.getLocation());
+        ticket.setPreferredContact(req.getPreferredContact());
         if (req.getResourceId() != null && !req.getResourceId().isBlank()) {
             Resource resource = resourceRepository.findById(req.getResourceId())
                     .orElseThrow(() -> new ResourceNotFoundException("Resource not found"));
@@ -93,6 +103,93 @@ public class TicketService {
     public Ticket getTicket(String ticketId) {
         return ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+    }
+
+    public Ticket updateUserTicket(String ticketId, String userId, UpdateUserTicketRequest req) {
+        Ticket ticket = getTicket(ticketId);
+        if (!ticket.getReporterId().equals(userId)) {
+            throw new BadRequestException("You can only edit your own tickets");
+        }
+        if (ticket.getStatus() != TicketStatus.OPEN) {
+            throw new BadRequestException("Ticket can only be edited while OPEN");
+        }
+        if (req.getDescription() != null && !req.getDescription().isBlank()) {
+            ticket.setDescription(req.getDescription().trim());
+        }
+        if (req.getPreferredContact() != null) {
+            ticket.setPreferredContact(req.getPreferredContact().trim());
+        }
+        ticket.setUpdatedAt(Instant.now());
+        return ticketRepository.save(ticket);
+    }
+
+    public void deleteUserTicket(String ticketId, String userId) {
+        Ticket ticket = getTicket(ticketId);
+        if (!ticket.getReporterId().equals(userId)) {
+            throw new BadRequestException("You can only delete your own tickets");
+        }
+        if (ticket.getStatus() != TicketStatus.OPEN) {
+            throw new BadRequestException("Ticket can only be deleted while OPEN");
+        }
+        attachmentRepository.deleteByTicketId(ticketId);
+        ticketRepository.deleteById(ticketId);
+    }
+
+    // ===== ATTACHMENT OPERATIONS =====
+
+    public AttachmentMetaResponse addAttachment(String ticketId, String userId,
+                                                 String fileName, String contentType, byte[] data) {
+        Ticket ticket = getTicket(ticketId);
+        if (!ticket.getReporterId().equals(userId)) {
+            throw new BadRequestException("You can only add attachments to your own tickets");
+        }
+        if (ticket.getStatus() != TicketStatus.OPEN) {
+            throw new BadRequestException("Attachments can only be added while ticket is OPEN");
+        }
+        if (attachmentRepository.countByTicketId(ticketId) >= MAX_ATTACHMENTS) {
+            throw new BadRequestException("Maximum " + MAX_ATTACHMENTS + " attachments allowed per ticket");
+        }
+
+        TicketAttachment attachment = new TicketAttachment();
+        attachment.setTicketId(ticketId);
+        attachment.setUploadedBy(userId);
+        attachment.setFileName(fileName);
+        attachment.setContentType(contentType);
+        attachment.setFileSize(data.length);
+        attachment.setData(data);
+        attachment.setUploadedAt(Instant.now());
+        TicketAttachment saved = attachmentRepository.save(attachment);
+
+        return toMeta(saved);
+    }
+
+    public List<AttachmentMetaResponse> getAttachments(String ticketId) {
+        return attachmentRepository.findByTicketId(ticketId).stream()
+                .map(this::toMeta)
+                .toList();
+    }
+
+    public TicketAttachment getAttachmentData(String ticketId, String attachmentId) {
+        return attachmentRepository.findByIdAndTicketId(attachmentId, ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment not found"));
+    }
+
+    public void deleteAttachment(String ticketId, String attachmentId, String userId) {
+        Ticket ticket = getTicket(ticketId);
+        if (!ticket.getReporterId().equals(userId)) {
+            throw new BadRequestException("You can only delete attachments from your own tickets");
+        }
+        if (ticket.getStatus() != TicketStatus.OPEN) {
+            throw new BadRequestException("Attachments can only be deleted while ticket is OPEN");
+        }
+        TicketAttachment attachment = attachmentRepository.findByIdAndTicketId(attachmentId, ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment not found"));
+        attachmentRepository.delete(attachment);
+    }
+
+    private AttachmentMetaResponse toMeta(TicketAttachment a) {
+        return new AttachmentMetaResponse(a.getId(), a.getTicketId(), a.getFileName(),
+                a.getContentType(), a.getFileSize(), a.getUploadedAt());
     }
 
     // ===== ADMIN OPERATIONS =====
@@ -194,7 +291,6 @@ public class TicketService {
             ticket.setAssignedTechnicianId(tech.getId());
             ticket.setAssignedTechnicianName(tech.getEmail());
 
-            // Auto-progress to IN_PROGRESS if currently OPEN
             if (ticket.getStatus() == TicketStatus.OPEN) {
                 ticket.setStatus(TicketStatus.IN_PROGRESS);
             }
@@ -209,6 +305,7 @@ public class TicketService {
         if (!ticketRepository.existsById(ticketId)) {
             throw new ResourceNotFoundException("Ticket not found");
         }
+        attachmentRepository.deleteByTicketId(ticketId);
         ticketRepository.deleteById(ticketId);
     }
 }

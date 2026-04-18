@@ -26,6 +26,9 @@ export default function StudentDashboard() {
         <Link to="/dashboard/student/bookings" className="dashboard-link">
           📅 My Bookings — view, filter, and manage your resource requests
         </Link>
+        <Link to="/dashboard/student/tickets" className="dashboard-link">
+          🎫 My Tickets — report issues and track campus incident tickets
+        </Link>
       </div>
 
       <p className="muted" style={{ marginTop: "1.5rem" }}>

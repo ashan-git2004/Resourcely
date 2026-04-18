@@ -41,6 +41,8 @@ public class Ticket {
 
     private String assignedTechnicianName;
 
+    private String preferredContact;
+
     private String adminReason;
 
     private String updatedBy;
@@ -156,6 +158,14 @@ public class Ticket {
 
     public void setAssignedTechnicianName(String assignedTechnicianName) {
         this.assignedTechnicianName = assignedTechnicianName;
+    }
+
+    public String getPreferredContact() {
+        return preferredContact;
+    }
+
+    public void setPreferredContact(String preferredContact) {
+        this.preferredContact = preferredContact;
     }
 
     public String getAdminReason() {
