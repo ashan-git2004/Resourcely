@@ -53,6 +53,9 @@ export default function Navbar() {
                 )}
               </div>
             )}
+            <NavLink to="/dashboard/student/bookings" className="nav-link">
+              My Bookings
+            </NavLink>
             <span className="user-pill">{auth?.email}</span>
             <button type="button" className="ghost-btn" onClick={logout}>
               Logout
