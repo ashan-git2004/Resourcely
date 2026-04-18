@@ -13,10 +13,12 @@
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/ApproveUserRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/AssignTechnicianRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/BookingActionRequest.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/CreateBookingRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/CreateResourceRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/CreateTicketRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/LoginRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/RegisterRequest.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/UpdateBookingRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/UpdateResourceRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/UpdateTicketRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/UpdateTicketStatusRequest.java
