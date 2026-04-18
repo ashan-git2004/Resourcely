@@ -1,7 +1,10 @@
 package com.smartcampus.controller;
 
+import com.smartcampus.dto.request.CreateBookingRequest;
+import com.smartcampus.dto.request.UpdateBookingRequest;
 import com.smartcampus.model.Booking;
 import com.smartcampus.service.BookingService;
+import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,8 +15,14 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * User API endpoints for booking management.
- * Allows authenticated users to create, view, and cancel their own bookings.
+ * Allows authenticated users to create, view, update, and cancel their own bookings.
  * All endpoints require valid authentication.
+ * 
+ * CRUD Operations:
+ * - CREATE: POST /api/user/bookings
+ * - READ: GET /api/user/bookings and GET /api/user/bookings/{bookingId}
+ * - UPDATE: PATCH /api/user/bookings/{bookingId} (only for PENDING bookings)
+ * - DELETE: DELETE /api/user/bookings/{bookingId} (only for PENDING bookings)
  */
 @RestController
 @RequestMapping("/api/user/bookings")
@@ -31,18 +40,20 @@ public class UserBookingController {
      * Automatically checks for scheduling conflicts with approved bookings.
      * If a conflict exists, returns 400 Bad Request with conflict details.
      * 
-     * @param booking the booking request (must include resourceId, startTime, endTime, purpose)
+     * @param request the booking request (must include resourceId, startTime, endTime, purpose)
      * @param authentication the authenticated user making the request
      * @return ResponseEntity with HTTP 201 (CREATED) and the created booking
      *         or HTTP 400 (BAD REQUEST) if validation fails or conflicts exist
      */
     @PostMapping
     public ResponseEntity<Booking> createBooking(
-            @RequestBody Booking booking,
+            @Valid @RequestBody CreateBookingRequest request,
             Authentication authentication) {
         
         String userId = authentication.getName();
-        booking.setUserId(userId);
+        Booking booking = new Booking(userId, request.getResourceId(), request.getStartTime(), 
+                                     request.getEndTime(), request.getPurpose());
+        booking.setExpectedAttendees(request.getExpectedAttendees());
         
         Booking created = bookingService.createBooking(booking);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -83,6 +94,67 @@ public class UserBookingController {
         }
         
         return ResponseEntity.ok(booking);
+    }
+
+    /**
+     * Update a booking request (ONLY while in PENDING status).
+     * 
+     * Users can only update their own bookings that are still pending approval.
+     * All fields in the update request are optional - only provided fields will be updated.
+     * 
+     * @param bookingId the booking ID to update
+     * @param request the update request with fields to update
+     * @param authentication the authenticated user
+     * @return ResponseEntity with HTTP 200 (OK) and the updated booking,
+     *         or HTTP 400 (BAD REQUEST) if booking is not pending,
+     *         or HTTP 404 (NOT FOUND) if booking doesn't exist,
+     *         or HTTP 403 (FORBIDDEN) if user doesn't own the booking
+     */
+    @PatchMapping("/{bookingId}")
+    public ResponseEntity<Booking> updateBooking(
+            @PathVariable String bookingId,
+            @RequestBody UpdateBookingRequest request,
+            Authentication authentication) {
+        
+        String userId = authentication.getName();
+        Booking booking = bookingService.getBooking(bookingId);
+        
+        // Verify ownership
+        if (!booking.getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        Booking updated = bookingService.updateUserBooking(bookingId, request);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Delete a booking request (ONLY while in PENDING status).
+     * 
+     * Users can only delete their own bookings that are still pending approval.
+     * 
+     * @param bookingId the booking ID to delete
+     * @param authentication the authenticated user
+     * @return ResponseEntity with HTTP 204 (NO CONTENT) on success,
+     *         or HTTP 400 (BAD REQUEST) if booking is not pending,
+     *         or HTTP 404 (NOT FOUND) if booking doesn't exist,
+     *         or HTTP 403 (FORBIDDEN) if user doesn't own the booking
+     */
+    @DeleteMapping("/{bookingId}")
+    public ResponseEntity<Void> deleteBooking(
+            @PathVariable String bookingId,
+            Authentication authentication) {
+        
+        String userId = authentication.getName();
+        Booking booking = bookingService.getBooking(bookingId);
+        
+        // Verify ownership
+        if (!booking.getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        bookingService.deleteUserBooking(bookingId);
+        return ResponseEntity.noContent().build();
     }
 
     /**
