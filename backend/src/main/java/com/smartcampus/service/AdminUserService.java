@@ -31,6 +31,14 @@ public class AdminUserService {
                 .toList();
     }
 
+    public List<AdminUserResponse> listByRole(UserRole role) {
+        return userRepository.findAll()
+                .stream()
+                .filter(u -> u.getRoles() != null && u.getRoles().contains(role))
+                .map(this::toResponse)
+                .toList();
+    }
+
     public AdminUserResponse approveUser(String userId, ApproveUserRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found."));
