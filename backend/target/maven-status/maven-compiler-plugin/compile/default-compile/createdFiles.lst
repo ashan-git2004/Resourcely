@@ -19,6 +19,7 @@ com/smartcampus/security/jwt/JwtAuthFilter.class
 com/smartcampus/controller/AdminBookingController.class
 com/smartcampus/model/ResourceStatus.class
 com/smartcampus/model/Ticket.class
+com/smartcampus/dto/request/CreateBookingRequest.class
 com/smartcampus/config/SecurityConfig.class
 com/smartcampus/exception/ResourceNotFoundException.class
 com/smartcampus/dto/response/AdminUserResponse.class
@@ -26,6 +27,7 @@ com/smartcampus/model/User.class
 com/smartcampus/exception/BadRequestException.class
 com/smartcampus/controller/UserBookingController.class
 com/smartcampus/dto/request/BookingActionRequest.class
+com/smartcampus/dto/request/UpdateBookingRequest.class
 com/smartcampus/service/TicketService.class
 com/smartcampus/dto/request/AssignTechnicianRequest.class
 com/smartcampus/security/UserDetailsServiceImpl.class
