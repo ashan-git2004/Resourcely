@@ -46,6 +46,9 @@ export default function Navbar() {
                     <NavLink to="/admin/bookings" className="dropdown-link" onClick={() => setAdminMenuOpen(false)}>
                       Bookings
                     </NavLink>
+                    <NavLink to="/admin/tickets" className="dropdown-link" onClick={() => setAdminMenuOpen(false)}>
+                      Tickets
+                    </NavLink>
                   </div>
                 )}
               </div>
