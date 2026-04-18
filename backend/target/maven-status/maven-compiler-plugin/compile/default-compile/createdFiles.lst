@@ -5,7 +5,9 @@ com/smartcampus/repository/TicketRepository.class
 com/smartcampus/model/UserRole.class
 com/smartcampus/model/AvailabilityWindow.class
 com/smartcampus/dto/request/LoginRequest.class
+com/smartcampus/service/TicketCommentService.class
 com/smartcampus/dto/response/ResourceResponse.class
+com/smartcampus/dto/request/UpdateUserTicketRequest.class
 com/smartcampus/dto/request/CreateTicketRequest.class
 com/smartcampus/model/Booking.class
 com/smartcampus/dto/request/ApproveUserRequest.class
@@ -27,6 +29,8 @@ com/smartcampus/model/User.class
 com/smartcampus/exception/BadRequestException.class
 com/smartcampus/controller/UserBookingController.class
 com/smartcampus/dto/request/BookingActionRequest.class
+com/smartcampus/controller/TicketCommentController.class
+com/smartcampus/model/TicketAttachment.class
 com/smartcampus/dto/request/UpdateBookingRequest.class
 com/smartcampus/service/TicketService.class
 com/smartcampus/dto/request/AssignTechnicianRequest.class
@@ -34,10 +38,13 @@ com/smartcampus/security/UserDetailsServiceImpl.class
 com/smartcampus/security/oauth2/CustomOAuth2UserService.class
 com/smartcampus/dto/request/UpdateResourceRequest.class
 com/smartcampus/dto/request/UpdateTicketStatusRequest.class
+com/smartcampus/model/TicketComment.class
 com/smartcampus/dto/request/CreateResourceRequest.class
 com/smartcampus/model/TicketCategory.class
+com/smartcampus/dto/request/CreateCommentRequest.class
 com/smartcampus/controller/AuthController.class
 com/smartcampus/model/Resource.class
+com/smartcampus/repository/TicketAttachmentRepository.class
 com/smartcampus/controller/AdminResourceController.class
 com/smartcampus/exception/GlobalExceptionHandler.class
 com/smartcampus/dto/request/UpdateTicketRequest.class
@@ -47,11 +54,13 @@ com/smartcampus/dto/response/UserResponse.class
 com/smartcampus/service/AuthService.class
 com/smartcampus/model/ApprovalStatus.class
 com/smartcampus/controller/UserTicketController.class
+com/smartcampus/dto/response/AttachmentMetaResponse.class
 com/smartcampus/repository/ResourceRepository.class
 com/smartcampus/model/TicketPriority.class
 com/smartcampus/dto/request/RegisterRequest.class
 com/smartcampus/controller/AdminTicketController.class
 com/smartcampus/security/oauth2/OAuth2SuccessHandler.class
 com/smartcampus/model/TicketStatus.class
+com/smartcampus/repository/TicketCommentRepository.class
 com/smartcampus/repository/UserRepository.class
 com/smartcampus/config/AdminBootstrapSeeder.class
