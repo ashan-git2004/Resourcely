@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import {
+  addComment,
+  deleteComment,
+  getComments,
+  updateComment,
+} from "./commentService";
+import {
   createTicket,
   deleteAttachment,
   deleteTicket,
@@ -103,6 +109,15 @@ export default function UserTicketsPage() {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
 
+  // comments
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsError, setCommentsError] = useState("");
+  const [commentInput, setCommentInput] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [editingComment, setEditingComment] = useState(null); // { id, content }
+  const [savingEdit, setSavingEdit] = useState(false);
+
   // filter
   const [filterStatus, setFilterStatus] = useState("ALL");
 
@@ -125,20 +140,72 @@ export default function UserTicketsPage() {
     setSelectedTicket(ticket);
     setAttachments([]);
     setAttError("");
+    setComments([]);
+    setCommentsError("");
+    setCommentInput("");
+    setEditingComment(null);
     setAttLoading(true);
+    setCommentsLoading(true);
     try {
-      const data = await listAttachments(ticket.id, token);
-      setAttachments(data);
+      const [atts, cmts] = await Promise.all([
+        listAttachments(ticket.id, token),
+        getComments(ticket.id, token),
+      ]);
+      setAttachments(atts);
+      setComments(cmts);
     } catch (e) {
       setAttError(e.message);
     } finally {
       setAttLoading(false);
+      setCommentsLoading(false);
     }
   }
 
   function closeDetail() {
     setSelectedTicket(null);
     setAttachments([]);
+    setComments([]);
+    setCommentInput("");
+    setEditingComment(null);
+  }
+
+  async function handleAddComment(e) {
+    e.preventDefault();
+    if (!commentInput.trim()) return;
+    setSubmittingComment(true);
+    try {
+      const c = await addComment(selectedTicket.id, commentInput.trim(), token);
+      setComments((prev) => [...prev, c]);
+      setCommentInput("");
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setSubmittingComment(false);
+    }
+  }
+
+  async function handleSaveEdit() {
+    if (!editingComment || !editingComment.content.trim()) return;
+    setSavingEdit(true);
+    try {
+      const updated = await updateComment(selectedTicket.id, editingComment.id, editingComment.content.trim(), token);
+      setComments((prev) => prev.map((c) => c.id === updated.id ? updated : c));
+      setEditingComment(null);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function handleDeleteComment(commentId) {
+    if (!confirm("Delete this comment?")) return;
+    try {
+      await deleteComment(selectedTicket.id, commentId, token);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (e) {
+      alert(e.message);
+    }
   }
 
   async function handleDelete(ticketId) {
@@ -286,6 +353,67 @@ export default function UserTicketsPage() {
                   canDelete={selectedTicket.status === "OPEN"} token={token}
                   onDeleted={(id) => setAttachments((prev) => prev.filter((a) => a.id !== id))} />
               ))}
+            </div>
+
+            {/* Comments */}
+            <div style={{ marginTop: "1.25rem" }}>
+              <strong style={{ fontSize: "0.9rem" }}>Comments ({comments.length})</strong>
+              {commentsLoading && <p className="muted" style={{ fontSize: "0.85rem" }}>Loading…</p>}
+              {commentsError && <p className="alert" style={{ fontSize: "0.85rem" }}>{commentsError}</p>}
+
+              <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {comments.map((c) => (
+                  <div key={c.id} style={{ background: "#f9f7ee", border: "1px solid var(--border)", borderRadius: "8px", padding: "0.6rem" }}>
+                    {editingComment?.id === c.id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                        <textarea value={editingComment.content}
+                          onChange={(e) => setEditingComment((prev) => ({ ...prev, content: e.target.value }))}
+                          rows={2} style={{ width: "100%", padding: "0.4rem", borderRadius: "7px", border: "1px solid #baa97e", font: "inherit", resize: "vertical" }} />
+                        <div style={{ display: "flex", gap: "0.4rem" }}>
+                          <button className="primary-btn" style={{ fontSize: "0.8rem", padding: "0.3rem 0.6rem" }}
+                            onClick={handleSaveEdit} disabled={savingEdit}>
+                            {savingEdit ? "Saving…" : "Save"}
+                          </button>
+                          <button className="ghost-btn" style={{ fontSize: "0.8rem", padding: "0.3rem 0.6rem" }}
+                            onClick={() => setEditingComment(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: "0.85rem", whiteSpace: "pre-wrap", marginBottom: "0.3rem" }}>{c.content}</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.75rem", color: "#888" }}>
+                            {c.authorName} · {new Date(c.createdAt).toLocaleString()}
+                            {c.edited && <span style={{ marginLeft: "0.3rem", fontStyle: "italic" }}>(edited)</span>}
+                          </span>
+                          {c.authorName === auth?.email && selectedTicket.status !== "CLOSED" && (
+                            <div style={{ display: "flex", gap: "0.3rem" }}>
+                              <button className="ghost-btn" style={{ fontSize: "0.75rem", padding: "0.15rem 0.4rem" }}
+                                onClick={() => setEditingComment({ id: c.id, content: c.content })}>Edit</button>
+                              <button className="danger-btn" style={{ fontSize: "0.75rem", padding: "0.15rem 0.4rem" }}
+                                onClick={() => handleDeleteComment(c.id)}>Delete</button>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+                {comments.length === 0 && !commentsLoading && (
+                  <p className="muted" style={{ fontSize: "0.85rem" }}>No comments yet.</p>
+                )}
+              </div>
+
+              {selectedTicket.status !== "CLOSED" && (
+                <form onSubmit={handleAddComment} style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+                  <input value={commentInput} onChange={(e) => setCommentInput(e.target.value)}
+                    placeholder="Write a comment…" style={{ flex: 1, padding: "0.5rem 0.7rem", borderRadius: "8px", border: "1px solid #baa97e", font: "inherit" }} />
+                  <button type="submit" className="primary-btn" style={{ padding: "0.5rem 0.9rem", whiteSpace: "nowrap" }}
+                    disabled={submittingComment || !commentInput.trim()}>
+                    {submittingComment ? "…" : "Post"}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>
