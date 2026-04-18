@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import {
   createBooking,
@@ -9,6 +9,12 @@ import {
 } from "./bookingService";
 
 const BOOKING_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"];
+
+const RESOURCE_TYPES = [
+  "LECTURE_HALL", "LAB", "MEETING_ROOM", "EQUIPMENT",
+  "LIBRARY", "COMPUTER_LAB", "AUDITORIUM", "SEMINAR_ROOM",
+  "PARKING", "SPORTS_FACILITY",
+];
 
 function statusColor(status) {
   switch (status) {
@@ -38,6 +44,10 @@ export default function UserBookingsPage() {
 
   // Filters
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterType, setFilterType] = useState("ALL");
+  const [filterLocation, setFilterLocation] = useState("");
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
 
   // Create booking modal
   const [createModal, setCreateModal] = useState(null); // { resourceId, startTime, endTime, purpose, expectedAttendees }
@@ -48,11 +58,17 @@ export default function UserBookingsPage() {
   // Detail panel
   const [selectedBooking, setSelectedBooking] = useState(null);
 
+  // Server-side: filters by resourceType/location (requires DB join).
+  // Status and date range are applied client-side after fetch for instant, reliable filtering.
   async function loadBookings() {
     setLoading(true);
     setError("");
     try {
-      const data = await getUserBookings(auth?.token);
+      const filters = {
+        resourceType: filterType === "ALL" ? null : filterType,
+        location: filterLocation.trim() || null,
+      };
+      const data = await getUserBookings(filters, auth?.token);
       setBookings(data || []);
     } catch (err) {
       setError(err.message);
@@ -64,7 +80,30 @@ export default function UserBookingsPage() {
   useEffect(() => {
     loadBookings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [filterType]);
+
+  // Client-side filtering for status and date range — instant, no round-trip needed.
+  // Dates are compared using the LOCAL date string (YYYY-MM-DD) to avoid UTC offset issues
+  // (a booking at 3 AM local time may be stored as the previous day in UTC).
+  const displayBookings = useMemo(() => {
+    let result = bookings;
+    if (filterStatus !== "ALL") {
+      result = result.filter((b) => b.status === filterStatus);
+    }
+    if (filterStartDate) {
+      result = result.filter((b) => {
+        const localDate = new Date(b.startTime).toLocaleDateString("sv"); // "sv" locale → YYYY-MM-DD
+        return localDate >= filterStartDate;
+      });
+    }
+    if (filterEndDate) {
+      result = result.filter((b) => {
+        const localDate = new Date(b.startTime).toLocaleDateString("sv");
+        return localDate <= filterEndDate;
+      });
+    }
+    return result;
+  }, [bookings, filterStatus, filterStartDate, filterEndDate]);
 
   function showSuccess(msg) {
     setSuccessMessage(msg);
@@ -149,10 +188,6 @@ export default function UserBookingsPage() {
     }
   }
 
-  const filteredBookings = filterStatus === "ALL" 
-    ? bookings 
-    : bookings.filter(b => b.status === filterStatus);
-
   return (
     <section className="card">
       <h1>My Bookings</h1>
@@ -161,7 +196,7 @@ export default function UserBookingsPage() {
       {error && <p className="alert">{error}</p>}
       {successMessage && <p className="success">{successMessage}</p>}
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ marginBottom: "1rem" }}>
         <button
           onClick={() => setCreateModal({ resourceId: "", startTime: "", endTime: "", purpose: "", expectedAttendees: null })}
           className="primary-btn"
@@ -169,25 +204,64 @@ export default function UserBookingsPage() {
         >
           + New Booking
         </button>
+      </div>
 
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="form-input"
-          style={{ minWidth: "150px", maxWidth: "200px" }}
-        >
-          <option value="ALL">All Statuses</option>
-          {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+      {/* Filters */}
+      <div className="bookings-filter-panel">
+        <div className="filter-row">
+          <div className="filter-group">
+            <label>Status</label>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="form-input filter-input">
+              <option value="ALL">All Statuses</option>
+              {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>Resource Type</label>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="form-input filter-input">
+              <option value="ALL">All Types</option>
+              {RESOURCE_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>Location</label>
+            <input
+              type="text"
+              value={filterLocation}
+              onChange={(e) => setFilterLocation(e.target.value)}
+              placeholder="e.g. Building A"
+              className="form-input filter-input"
+            />
+          </div>
+        </div>
+        <div className="filter-row">
+          <div className="filter-group">
+            <label>Start Date (from)</label>
+            <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="form-input filter-input" />
+          </div>
+          <div className="filter-group">
+            <label>End Date (to)</label>
+            <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="form-input filter-input" />
+          </div>
+          <div className="filter-group filter-actions">
+            <button onClick={loadBookings} className="primary-btn filter-btn">Apply</button>
+            <button
+              onClick={() => { setFilterStatus("ALL"); setFilterType("ALL"); setFilterLocation(""); setFilterStartDate(""); setFilterEndDate(""); }}
+              className="ghost-btn filter-btn"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
       </div>
 
       {loading && <p className="muted">Loading bookings...</p>}
 
-      {!loading && filteredBookings.length === 0 && (
+      {!loading && displayBookings.length === 0 && (
         <p className="success">✓ No bookings found.</p>
       )}
 
-      {!loading && filteredBookings.length > 0 && (
+      {!loading && displayBookings.length > 0 && (
         <div className="table-wrap">
           <table className="admin-table">
             <thead>
@@ -201,7 +275,7 @@ export default function UserBookingsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredBookings.map((booking) => {
+              {displayBookings.map((booking) => {
                 const sc = statusColor(booking.status);
                 const isBusy = busyId === booking.id;
                 const isPending = booking.status === "PENDING";
@@ -645,6 +719,52 @@ export default function UserBookingsPage() {
 
         .ticket-title-btn:hover {
           opacity: 0.8;
+        }
+
+        .bookings-filter-panel {
+          background: rgba(0,0,0,0.03);
+          border: 1px solid var(--border, #d7cdaa);
+          border-radius: 10px;
+          padding: 1rem 1.25rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .filter-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .filter-row:last-child { margin-bottom: 0; }
+
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.3rem;
+          flex: 1;
+          min-width: 130px;
+        }
+
+        .filter-group > label {
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: #555;
+          margin-bottom: 0;
+        }
+
+        .filter-input { min-width: 130px; }
+
+        .filter-actions {
+          flex-direction: row !important;
+          align-items: flex-end;
+          gap: 0.5rem;
+        }
+
+        .filter-btn {
+          width: auto !important;
+          padding: 0.45rem 0.9rem !important;
+          font-size: 0.88rem !important;
         }
       `}</style>
     </section>

@@ -21,16 +21,14 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      <h2 style={{ marginTop: "1.5rem" }}>Available Actions</h2>
-      <ul style={{ lineHeight: "1.8" }}>
-        <li>View current schedules</li>
-        <li>Access campus facilities information</li>
-        <li>Request maintenance for facilities</li>
-        <li>View campus announcements</li>
-        <li>Report facility issues</li>
-      </ul>
+      <h2 style={{ marginTop: "1.5rem" }}>Quick Links</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginTop: "0.5rem" }}>
+        <Link to="/dashboard/student/bookings" className="dashboard-link">
+          📅 My Bookings — view, filter, and manage your resource requests
+        </Link>
+      </div>
 
-      <p className="muted" style={{ marginTop: "1rem" }}>
+      <p className="muted" style={{ marginTop: "1.5rem" }}>
         <Link to="/login" className="text-link">
           Switch account
         </Link>
