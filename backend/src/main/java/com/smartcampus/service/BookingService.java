@@ -5,6 +5,7 @@ import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.model.Booking;
 import com.smartcampus.model.BookingStatus;
 import com.smartcampus.repository.BookingRepository;
+import com.smartcampus.dto.request.UpdateBookingRequest;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -79,6 +80,68 @@ public class BookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setUpdatedAt(Instant.now());
         return bookingRepository.save(booking);
+    }
+
+    /**
+     * Update a booking request (only PENDING bookings can be updated by users).
+     * 
+     * Users can only update bookings that are still in PENDING status.
+     * All fields in the update request are optional - only provided fields will be updated.
+     * 
+     * @param bookingId the booking ID to update
+     * @param request the update request with fields to update
+     * @return the updated booking
+     */
+    public Booking updateUserBooking(String bookingId, UpdateBookingRequest request) {
+        Booking booking = getBooking(bookingId);
+
+        if (!booking.getStatus().equals(BookingStatus.PENDING)) {
+            throw new BadRequestException("Only pending bookings can be updated");
+        }
+
+        // Update purpose if provided
+        if (request.getPurpose() != null && !request.getPurpose().isBlank()) {
+            booking.setPurpose(request.getPurpose());
+        }
+
+        // Update time range if provided (validate if both are provided)
+        if (request.getStartTime() != null && request.getEndTime() != null) {
+            if (request.getStartTime().isAfter(request.getEndTime())) {
+                throw new BadRequestException("Start time must be before end time");
+            }
+            // Check for conflicts with the new time range
+            List<Booking> conflicts = checkConflicts(booking.getResourceId(), request.getStartTime(), request.getEndTime());
+            if (!conflicts.isEmpty()) {
+                throw new BadRequestException(
+                        "Resource is not available during the requested time period. "
+                        + conflicts.size() + " conflicting booking(s) found.");
+            }
+            booking.setStartTime(request.getStartTime());
+            booking.setEndTime(request.getEndTime());
+        }
+
+        // Update expected attendees if provided
+        if (request.getExpectedAttendees() != null) {
+            booking.setExpectedAttendees(request.getExpectedAttendees());
+        }
+
+        booking.setUpdatedAt(Instant.now());
+        return bookingRepository.save(booking);
+    }
+
+    /**
+     * Delete a booking request (only PENDING bookings can be deleted by users).
+     * 
+     * @param bookingId the booking ID to delete
+     */
+    public void deleteUserBooking(String bookingId) {
+        Booking booking = getBooking(bookingId);
+
+        if (!booking.getStatus().equals(BookingStatus.PENDING)) {
+            throw new BadRequestException("Only pending bookings can be deleted");
+        }
+
+        bookingRepository.deleteById(bookingId);
     }
 
     // ===== ADMIN OPERATIONS =====
