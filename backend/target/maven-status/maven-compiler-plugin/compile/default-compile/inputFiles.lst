@@ -7,6 +7,7 @@
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/AdminTicketController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/AdminUserController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/AuthController.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/TicketCommentController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/UserBookingController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/UserController.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/controller/UserTicketController.java
@@ -14,6 +15,7 @@
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/AssignTechnicianRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/BookingActionRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/CreateBookingRequest.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/CreateCommentRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/CreateResourceRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/CreateTicketRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/LoginRequest.java
@@ -22,7 +24,9 @@
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/UpdateResourceRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/UpdateTicketRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/UpdateTicketStatusRequest.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/request/UpdateUserTicketRequest.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/response/AdminUserResponse.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/response/AttachmentMetaResponse.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/response/AuthResponse.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/response/ResourceResponse.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/dto/response/UserResponse.java
@@ -37,13 +41,17 @@
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/Resource.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/ResourceStatus.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/Ticket.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/TicketAttachment.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/TicketCategory.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/TicketComment.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/TicketPriority.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/TicketStatus.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/User.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/model/UserRole.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/repository/BookingRepository.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/repository/ResourceRepository.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/repository/TicketAttachmentRepository.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/repository/TicketCommentRepository.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/repository/TicketRepository.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/repository/UserRepository.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/security/UserDetailsServiceImpl.java
@@ -55,4 +63,5 @@
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/service/AuthService.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/service/BookingService.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/service/ResourceService.java
+/Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/service/TicketCommentService.java
 /Users/kaveeshaathukorala/Downloads/wolfnox campus/smart-campus/backend/src/main/java/com/smartcampus/service/TicketService.java

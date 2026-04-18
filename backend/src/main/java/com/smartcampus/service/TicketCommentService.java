@@ -41,7 +41,7 @@ public class TicketCommentService {
         TicketComment comment = new TicketComment();
         comment.setTicketId(ticketId);
         comment.setAuthorId(authorId);
-        userRepository.findById(authorId)
+        userRepository.findByEmail(authorId)
                 .ifPresent(u -> comment.setAuthorName(u.getEmail()));
         comment.setContent(trimmed);
         Instant now = Instant.now();
