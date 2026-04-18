@@ -37,6 +37,9 @@ export default function AppRouter() {
     if (roles.includes("TECHNICIAN")) {
       return <Navigate to="/dashboard/technician" replace />;
     }
+    if (roles.includes("USER")) {
+      return <Navigate to="/dashboard/student" replace />;
+    }
     return <DashboardPage />;
   }
 
