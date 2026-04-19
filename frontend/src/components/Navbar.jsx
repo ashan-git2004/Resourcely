@@ -28,16 +28,20 @@ export default function Navbar() {
 
         {isAuthenticated && (
           <>
+            <NavLink to="/home" className="nav-link font-semibold">
+              Home
+            </NavLink>
+
             {isAdmin && (
               <div className="relative">
                 <button
-                  className="bg-transparent border-none text-[#0066cc] cursor-pointer text-base px-2 py-2 hover:text-[#0052a3]"
+                  className="nav-link bg-transparent border-none cursor-pointer flex items-center gap-1 px-2 py-2"
                   onClick={() => setAdminMenuOpen(!adminMenuOpen)}
                 >
-                  Admin ▼
+                  Admin <span className="text-xs">▼</span>
                 </button>
                 {adminMenuOpen && (
-                  <div className="absolute top-full left-0 bg-white border border-[#e0e0e0] rounded min-w-[150px] shadow-[0_4px_6px_rgba(0,0,0,0.1)] z-[100]">
+                  <div className="absolute top-full right-0 bg-campus-panel border border-campus-border rounded-xl min-w-[160px] shadow-lg z-[100] overflow-hidden">
                     {[
                       { to: "/admin/users",     label: "Users" },
                       { to: "/admin/resources", label: "Resources" },
@@ -47,7 +51,7 @@ export default function Navbar() {
                       <NavLink
                         key={to}
                         to={to}
-                        className="block px-4 py-3 text-[#0066cc] no-underline bg-transparent w-full text-left transition-colors hover:bg-[#f0f0f0] hover:text-[#0052a3]"
+                        className="block px-4 py-2.5 text-campus-ink no-underline bg-transparent w-full text-left transition-colors hover:bg-campus-accent/10 hover:text-campus-accent"
                         onClick={() => setAdminMenuOpen(false)}
                       >
                         {label}
@@ -68,7 +72,7 @@ export default function Navbar() {
 
             <div className="relative inline-block">
               <button
-                className="bg-transparent border-none text-xl cursor-pointer px-3 py-2 rounded transition-colors hover:bg-[#f0f0f0]"
+                className="bg-transparent border-none text-xl cursor-pointer px-3 py-2 rounded transition-colors hover:bg-campus-accent/10"
                 onClick={() => setNotificationPanelOpen(!notificationPanelOpen)}
                 title="Notifications"
               >

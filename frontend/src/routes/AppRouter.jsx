@@ -17,11 +17,12 @@ import UserBookingsPage from "../features/user/UserBookingsPage";
 import UserTicketsPage from "../features/user/UserTicketsPage";
 import BookingDetailsPage from "../features/user/BookingDetailsPage";
 import CheckInPage from "../features/user/CheckInPage";
+import HomePage from "../features/home/HomePage";
 import ProtectedRoute from "./ProtectedRoute";
 
 function HomeGate() {
   const { isAuthenticated } = useAuth();
-  return <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />;
+  return <Navigate to={isAuthenticated ? "/home" : "/login"} replace />;
 }
 
 export default function AppRouter() {
@@ -54,6 +55,14 @@ export default function AppRouter() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={
