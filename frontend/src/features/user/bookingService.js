@@ -83,3 +83,7 @@ export function checkBookingConflicts(resourceId, startTime, endTime, token) {
   }).toString();
   return request("GET", `/api/user/bookings/check-conflicts?${query}`, { token });
 }
+
+export function getQrCode(bookingId, token) {
+  return request("GET", `/api/user/bookings/${bookingId}/qr-code`, { token });
+}

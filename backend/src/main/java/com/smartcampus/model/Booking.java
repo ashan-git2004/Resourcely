@@ -64,6 +64,13 @@ public class Booking {
 
     private Instant approvedAt;
 
+    /**
+     * Check-in tracking for QR code verification.
+     */
+    private boolean checkedIn = false;
+
+    private Instant checkedInAt;
+
     public Booking() {
     }
 
@@ -197,5 +204,21 @@ public class Booking {
 
     public void setApprovedAt(Instant approvedAt) {
         this.approvedAt = approvedAt;
+    }
+
+    public boolean isCheckedIn() {
+        return checkedIn;
+    }
+
+    public void setCheckedIn(boolean checkedIn) {
+        this.checkedIn = checkedIn;
+    }
+
+    public Instant getCheckedInAt() {
+        return checkedInAt;
+    }
+
+    public void setCheckedInAt(Instant checkedInAt) {
+        this.checkedInAt = checkedInAt;
     }
 }

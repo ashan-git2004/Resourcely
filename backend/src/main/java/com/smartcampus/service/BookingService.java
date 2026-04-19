@@ -291,6 +291,47 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
 
+    // ===== QR CODE CHECK-IN OPERATIONS =====
+
+    /**
+     * Mark a booking as checked in.
+     * Only approved bookings can be checked in.
+     */
+    public Booking checkInBooking(String bookingId, String userId) {
+        Booking booking = getBooking(bookingId);
+
+        if (!booking.getStatus().equals(BookingStatus.APPROVED)) {
+            throw new BadRequestException("Only approved bookings can be checked in");
+        }
+
+        if (!booking.getUserId().equals(userId)) {
+            throw new BadRequestException("You can only check in your own bookings");
+        }
+
+        // Check if booking is within current time window (with 1 hour buffer before)
+        Instant now = Instant.now();
+        Instant oneHourBefore = booking.getStartTime().minusSeconds(3600);
+        if (now.isBefore(oneHourBefore)) {
+            throw new BadRequestException("Check-in cannot be done more than 1 hour before the booking time");
+        }
+
+        if (now.isAfter(booking.getEndTime())) {
+            throw new BadRequestException("Cannot check in after booking time has ended");
+        }
+
+        booking.setCheckedIn(true);
+        booking.setCheckedInAt(now);
+        booking.setUpdatedAt(now);
+        return bookingRepository.save(booking);
+    }
+
+    /**
+     * Get check-in status of a booking.
+     */
+    public Booking getCheckInStatus(String bookingId) {
+        return getBooking(bookingId);
+    }
+
     /**
      * Admin cancels an approved booking.
      */

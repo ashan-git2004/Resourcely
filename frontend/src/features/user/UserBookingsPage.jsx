@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   createBooking,
@@ -36,6 +37,7 @@ function formatDate(iso) {
 
 export default function UserBookingsPage() {
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -333,13 +335,21 @@ export default function UserBookingsPage() {
                         </>
                       )}
                       {isApproved && (
-                        <button
-                          onClick={() => handleCancelBooking(booking.id)}
-                          disabled={isBusy || busyId !== ""}
-                          className="danger-btn action-btn"
-                        >
-                          Cancel
-                        </button>
+                        <>
+                          <button
+                            onClick={() => navigate(`/bookings/${booking.id}`)}
+                            className="primary-btn action-btn"
+                          >
+                            View QR
+                          </button>
+                          <button
+                            onClick={() => handleCancelBooking(booking.id)}
+                            disabled={isBusy || busyId !== ""}
+                            className="danger-btn action-btn"
+                          >
+                            Cancel
+                          </button>
+                        </>
                       )}
                       {booking.adminReason && (
                         <div className="muted" style={{ fontSize: "0.75rem", marginTop: "0.3rem" }}>

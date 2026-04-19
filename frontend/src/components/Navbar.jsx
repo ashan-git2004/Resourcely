@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 export default function Navbar() {
   const { isAuthenticated, auth, logout } = useAuth();
   const isAdmin = (auth?.roles || []).includes("ADMIN");
+  const isTechnician = (auth?.roles || []).includes("TECHNICIAN");
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
   return (
@@ -52,6 +53,11 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
+            )}
+            {isTechnician && (
+              <NavLink to="/check-in" className="nav-link">
+                Check-In
+              </NavLink>
             )}
             <NavLink to="/dashboard/student/bookings" className="nav-link">
               My Bookings

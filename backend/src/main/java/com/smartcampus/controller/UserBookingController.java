@@ -2,9 +2,13 @@ package com.smartcampus.controller;
 
 import com.smartcampus.dto.request.CreateBookingRequest;
 import com.smartcampus.dto.request.UpdateBookingRequest;
+import com.smartcampus.dto.request.VerifyQrCodeRequest;
+import com.smartcampus.dto.response.QrCodeResponse;
 import com.smartcampus.model.Booking;
 import com.smartcampus.model.BookingStatus;
 import com.smartcampus.service.BookingService;
+import com.smartcampus.service.QrCodeService;
+import com.google.zxing.WriterException;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
@@ -30,9 +34,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserBookingController {
 
     private final BookingService bookingService;
+    private final QrCodeService qrCodeService;
 
-    public UserBookingController(BookingService bookingService) {
+    public UserBookingController(BookingService bookingService, QrCodeService qrCodeService) {
         this.bookingService = bookingService;
+        this.qrCodeService = qrCodeService;
     }
 
     /**
@@ -205,5 +211,104 @@ public class UserBookingController {
         
         List<Booking> conflicts = bookingService.checkConflicts(resourceId, startTime, endTime);
         return ResponseEntity.ok(conflicts);
+    }
+
+    // ===== QR CODE CHECK-IN ENDPOINTS =====
+
+    /**
+     * Get QR code for an approved booking.
+     * Users can view their booking's QR code for check-in purposes.
+     * Only approved bookings have QR codes.
+     * 
+     * @param bookingId the booking ID
+     * @param authentication the authenticated user
+     * @return ResponseEntity with QR code data and booking details
+     */
+    @GetMapping("/{bookingId}/qr-code")
+    public ResponseEntity<QrCodeResponse> getQrCode(
+            @PathVariable String bookingId,
+            Authentication authentication) throws WriterException {
+        
+        String userId = authentication.getName();
+        Booking booking = bookingService.getBooking(bookingId);
+        
+        // Verify ownership
+        if (!booking.getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        // Only approved bookings have QR codes
+        if (!booking.getStatus().equals(BookingStatus.APPROVED)) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        // Generate QR code
+        String qrCodeData = qrCodeService.generateQrCode(bookingId, userId);
+        QrCodeResponse response = new QrCodeResponse(
+            qrCodeData,
+            booking.getId(),
+            booking.getResourceName(),
+            booking.getStartTime().toString(),
+            booking.getEndTime().toString()
+        );
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Verify QR code and check in to a booking.
+     * This endpoint is used both by users (to self-check-in) and staff (to verify check-ins).
+     * 
+     * @param request the QR code data to verify
+     * @param authentication the authenticated user
+     * @return ResponseEntity with updated booking details
+     */
+    @PostMapping("/verify-qr")
+    public ResponseEntity<Booking> verifyQrCode(
+            @Valid @RequestBody VerifyQrCodeRequest request,
+            Authentication authentication) {
+        
+        String userId = authentication.getName();
+        
+        try {
+            // Parse QR code
+            QrCodeService.BookingVerificationData data = qrCodeService.verifyQrCode(request.getQrData());
+            
+            // Verify it's the user's booking
+            Booking booking = bookingService.getBooking(data.bookingId);
+            if (!booking.getUserId().equals(data.userId)) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // Check in
+            Booking checkedIn = bookingService.checkInBooking(data.bookingId, userId);
+            return ResponseEntity.ok(checkedIn);
+            
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Get check-in status of a booking.
+     * 
+     * @param bookingId the booking ID
+     * @param authentication the authenticated user
+     * @return ResponseEntity with booking details including check-in status
+     */
+    @GetMapping("/{bookingId}/check-in-status")
+    public ResponseEntity<Booking> getCheckInStatus(
+            @PathVariable String bookingId,
+            Authentication authentication) {
+        
+        String userId = authentication.getName();
+        Booking booking = bookingService.getCheckInStatus(bookingId);
+        
+        // Verify ownership
+        if (!booking.getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        return ResponseEntity.ok(booking);
     }
 }
