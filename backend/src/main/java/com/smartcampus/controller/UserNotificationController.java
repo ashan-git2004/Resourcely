@@ -31,97 +31,137 @@ public class UserNotificationController {
      * Get all notifications for the current user.
      */
     @GetMapping
-    public ResponseEntity<List<NotificationResponse>> getNotifications(
+    public ResponseEntity<?> getNotifications(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
-        String userId = extractUserIdFromToken(token);
-        List<Notification> notifications = notificationService.getUserNotifications(userId);
-        List<NotificationResponse> responses = notifications.stream()
-                .map(NotificationResponse::new)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(responses);
+        try {
+            String userId = extractUserIdFromToken(token);
+            List<Notification> notifications = notificationService.getUserNotifications(userId);
+            List<NotificationResponse> responses = notifications.stream()
+                    .map(NotificationResponse::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(responses);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error fetching notifications: " + e.getMessage());
+        }
     }
 
     /**
      * Get unread notifications for the current user.
      */
     @GetMapping("/unread")
-    public ResponseEntity<List<NotificationResponse>> getUnreadNotifications(
+    public ResponseEntity<?> getUnreadNotifications(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
-        String userId = extractUserIdFromToken(token);
-        List<Notification> notifications = notificationService.getUnreadNotifications(userId);
-        List<NotificationResponse> responses = notifications.stream()
-                .map(NotificationResponse::new)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(responses);
+        try {
+            String userId = extractUserIdFromToken(token);
+            List<Notification> notifications = notificationService.getUnreadNotifications(userId);
+            List<NotificationResponse> responses = notifications.stream()
+                    .map(NotificationResponse::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(responses);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error fetching unread notifications: " + e.getMessage());
+        }
     }
 
     /**
      * Get count of unread notifications.
      */
     @GetMapping("/unread/count")
-    public ResponseEntity<Long> getUnreadCount(
+    public ResponseEntity<?> getUnreadCount(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
-        String userId = extractUserIdFromToken(token);
-        long count = notificationService.getUnreadCount(userId);
-        return ResponseEntity.ok(count);
+        try {
+            String userId = extractUserIdFromToken(token);
+            long count = notificationService.getUnreadCount(userId);
+            return ResponseEntity.ok(count);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error fetching unread count: " + e.getMessage());
+        }
     }
 
     /**
      * Mark a notification as read.
      */
     @PutMapping("/{notificationId}/read")
-    public ResponseEntity<NotificationResponse> markAsRead(
+    public ResponseEntity<?> markAsRead(
             @PathVariable String notificationId,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
-        String userId = extractUserIdFromToken(token);
-        Notification notification = notificationService.markAsRead(notificationId);
-        return ResponseEntity.ok(new NotificationResponse(notification));
+        try {
+            String userId = extractUserIdFromToken(token);
+            Notification notification = notificationService.markAsRead(notificationId);
+            return ResponseEntity.ok(new NotificationResponse(notification));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error marking notification as read: " + e.getMessage());
+        }
     }
 
     /**
      * Mark all notifications as read for the current user.
      */
     @PutMapping("/read-all")
-    public ResponseEntity<String> markAllAsRead(
+    public ResponseEntity<?> markAllAsRead(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
-        String userId = extractUserIdFromToken(token);
-        notificationService.markAllAsRead(userId);
-        return ResponseEntity.ok("All notifications marked as read");
+        try {
+            String userId = extractUserIdFromToken(token);
+            notificationService.markAllAsRead(userId);
+            return ResponseEntity.ok("All notifications marked as read");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error marking all as read: " + e.getMessage());
+        }
     }
 
     /**
      * Delete a notification.
      */
     @DeleteMapping("/{notificationId}")
-    public ResponseEntity<String> deleteNotification(
+    public ResponseEntity<?> deleteNotification(
             @PathVariable String notificationId,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
-        String userId = extractUserIdFromToken(token);
-        notificationService.deleteNotification(notificationId);
-        return ResponseEntity.ok("Notification deleted");
+        try {
+            String userId = extractUserIdFromToken(token);
+            notificationService.deleteNotification(notificationId);
+            return ResponseEntity.ok("Notification deleted");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error deleting notification: " + e.getMessage());
+        }
     }
 
     /**
      * Get notification preferences for the current user.
      */
     @GetMapping("/preferences")
-    public ResponseEntity<NotificationPreference> getPreferences(
+    public ResponseEntity<?> getPreferences(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
-        String userId = extractUserIdFromToken(token);
-        NotificationPreference prefs = notificationService.getPreferences(userId);
-        return ResponseEntity.ok(prefs);
+        try {
+            String userId = extractUserIdFromToken(token);
+            NotificationPreference prefs = notificationService.getPreferences(userId);
+            return ResponseEntity.ok(prefs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error fetching preferences: " + e.getMessage());
+        }
     }
 
     /**
      * Update notification preferences for the current user.
      */
     @PutMapping("/preferences")
-    public ResponseEntity<NotificationPreference> updatePreferences(
+    public ResponseEntity<?> updatePreferences(
             @RequestBody NotificationPreference preferences,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
-        String userId = extractUserIdFromToken(token);
-        NotificationPreference updated = notificationService.updatePreferences(userId, preferences);
-        return ResponseEntity.ok(updated);
+        try {
+            String userId = extractUserIdFromToken(token);
+            NotificationPreference updated = notificationService.updatePreferences(userId, preferences);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error updating preferences: " + e.getMessage());
+        }
     }
 
     /**
@@ -131,4 +171,5 @@ public class UserNotificationController {
         String jwt = token.startsWith("Bearer ") ? token.substring(7) : token;
         return jwtTokenProvider.getEmailFromToken(jwt);
     }
+}
 }
