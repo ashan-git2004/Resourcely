@@ -172,4 +172,3 @@ public class UserNotificationController {
         return jwtTokenProvider.getEmailFromToken(jwt);
     }
 }
-}
