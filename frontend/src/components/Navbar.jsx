@@ -21,69 +21,64 @@ export default function Navbar() {
       <nav className="topnav">
         {!isAuthenticated && (
           <>
-            <NavLink to="/login" className="nav-link">
-              Login
-            </NavLink>
-            <NavLink to="/register" className="nav-link">
-              Signup
-            </NavLink>
+            <NavLink to="/login" className="nav-link">Login</NavLink>
+            <NavLink to="/register" className="nav-link">Signup</NavLink>
           </>
         )}
 
         {isAuthenticated && (
           <>
             {isAdmin && (
-              <div className="admin-menu">
+              <div className="relative">
                 <button
-                  className="nav-link"
+                  className="bg-transparent border-none text-[#0066cc] cursor-pointer text-base px-2 py-2 hover:text-[#0052a3]"
                   onClick={() => setAdminMenuOpen(!adminMenuOpen)}
                 >
                   Admin ▼
                 </button>
                 {adminMenuOpen && (
-                  <div className="admin-dropdown">
-                    <NavLink to="/admin/users" className="dropdown-link" onClick={() => setAdminMenuOpen(false)}>
-                      Users
-                    </NavLink>
-                    <NavLink to="/admin/resources" className="dropdown-link" onClick={() => setAdminMenuOpen(false)}>
-                      Resources
-                    </NavLink>
-                    <NavLink to="/admin/bookings" className="dropdown-link" onClick={() => setAdminMenuOpen(false)}>
-                      Bookings
-                    </NavLink>
-                    <NavLink to="/admin/tickets" className="dropdown-link" onClick={() => setAdminMenuOpen(false)}>
-                      Tickets
-                    </NavLink>
+                  <div className="absolute top-full left-0 bg-white border border-[#e0e0e0] rounded min-w-[150px] shadow-[0_4px_6px_rgba(0,0,0,0.1)] z-[100]">
+                    {[
+                      { to: "/admin/users",     label: "Users" },
+                      { to: "/admin/resources", label: "Resources" },
+                      { to: "/admin/bookings",  label: "Bookings" },
+                      { to: "/admin/tickets",   label: "Tickets" },
+                    ].map(({ to, label }) => (
+                      <NavLink
+                        key={to}
+                        to={to}
+                        className="block px-4 py-3 text-[#0066cc] no-underline bg-transparent w-full text-left transition-colors hover:bg-[#f0f0f0] hover:text-[#0052a3]"
+                        onClick={() => setAdminMenuOpen(false)}
+                      >
+                        {label}
+                      </NavLink>
+                    ))}
                   </div>
                 )}
               </div>
             )}
+
             {isTechnician && (
-              <NavLink to="/check-in" className="nav-link">
-                Check-In
-              </NavLink>
+              <NavLink to="/check-in" className="nav-link">Check-In</NavLink>
             )}
+
             <NavLink to="/dashboard/student/bookings" className="nav-link">
               My Bookings
             </NavLink>
-            
-            {/* Notification Bell */}
-            <div className="notification-menu">
-              <button 
-                className="notification-bell"
+
+            <div className="relative inline-block">
+              <button
+                className="bg-transparent border-none text-xl cursor-pointer px-3 py-2 rounded transition-colors hover:bg-[#f0f0f0]"
                 onClick={() => setNotificationPanelOpen(!notificationPanelOpen)}
                 title="Notifications"
               >
                 🔔
               </button>
-              {notificationPanelOpen && (
-                <NotificationPanel />
-              )}
+              {notificationPanelOpen && <NotificationPanel />}
             </div>
 
-            {/* Preferences */}
             <button
-              className="preferences-btn"
+              className="bg-transparent border-none text-xl cursor-pointer px-3 py-2 rounded transition-colors hover:bg-[#f0f0f0]"
               onClick={() => setShowPreferences(true)}
               title="Notification Preferences"
             >
@@ -93,7 +88,7 @@ export default function Navbar() {
             {showPreferences && (
               <NotificationPreferences onClose={() => setShowPreferences(false)} />
             )}
-            
+
             <span className="user-pill">{auth?.email}</span>
             <button type="button" className="ghost-btn" onClick={logout}>
               Logout
@@ -101,97 +96,6 @@ export default function Navbar() {
           </>
         )}
       </nav>
-
-      <style>{`
-        .admin-menu {
-          position: relative;
-        }
-
-        .admin-menu > button {
-          background: none;
-          border: none;
-          color: #0066cc;
-          cursor: pointer;
-          font-size: 1rem;
-          padding: 0.5rem;
-          margin: 0;
-        }
-
-        .admin-menu > button:hover {
-          color: #0052a3;
-        }
-
-        .admin-dropdown {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          background-color: white;
-          border: 1px solid #e0e0e0;
-          border-radius: 4px;
-          min-width: 150px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          z-index: 100;
-        }
-
-        .dropdown-link {
-          display: block;
-          padding: 0.75rem 1rem;
-          color: #0066cc;
-          text-decoration: none;
-          border: none;
-          background: none;
-          cursor: pointer;
-          width: 100%;
-          text-align: left;
-          transition: background-color 0.2s;
-        }
-
-        .dropdown-link:hover {
-          background-color: #f0f0f0;
-          color: #0052a3;
-        }
-
-        .dropdown-link:first-child {
-          border-radius: 4px 4px 0 0;
-        }
-
-        .dropdown-link:last-child {
-          border-radius: 0 0 4px 4px;
-        }
-
-        .notification-menu {
-          position: relative;
-          display: inline-block;
-        }
-
-        .notification-bell {
-          background: none;
-          border: none;
-          font-size: 1.2rem;
-          cursor: pointer;
-          padding: 0.5rem 0.8rem;
-          border-radius: 4px;
-          transition: background-color 0.2s;
-        }
-
-        .notification-bell:hover {
-          background-color: #f0f0f0;
-        }
-
-        .preferences-btn {
-          background: none;
-          border: none;
-          font-size: 1.2rem;
-          cursor: pointer;
-          padding: 0.5rem 0.8rem;
-          border-radius: 4px;
-          transition: background-color 0.2s;
-        }
-
-        .preferences-btn:hover {
-          background-color: #f0f0f0;
-        }
-      `}</style>
     </header>
   );
 }

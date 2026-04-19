@@ -28,17 +28,24 @@ public class NotificationService {
      */
     public Notification createNotification(String userId, Notification.NotificationType type,
             String title, String message, String relatedId, String relatedResourceName) {
-        
-        // Check if user has enabled this notification type
+
+        System.out.println("[NOTIFY] createNotification userId=" + userId + " type=" + type + " title=" + title);
+
         NotificationPreference prefs = getOrCreatePreferences(userId);
-        
+        System.out.println("[NOTIFY] prefs loaded: ticket=" + prefs.isTicketNotifications()
+                + " comment=" + prefs.isCommentNotifications()
+                + " booking=" + prefs.isBookingNotifications());
+
         if (!isNotificationEnabled(prefs, type)) {
-            return null; // Notification disabled
+            System.out.println("[NOTIFY] SKIPPED — type disabled for user " + userId);
+            return null;
         }
-        
+
         Notification notification = new Notification(userId, type, title, message, relatedId);
         notification.setRelatedResourceName(relatedResourceName);
-        return notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        System.out.println("[NOTIFY] SAVED id=" + saved.getId() + " for userId=" + userId);
+        return saved;
     }
 
     /**
@@ -92,32 +99,38 @@ public class NotificationService {
      * Get user notification preferences.
      */
     public NotificationPreference getPreferences(String userId) {
-        return preferenceRepository.findByUserId(userId)
-                .orElseGet(() -> createPreferences(userId));
+        return getOrCreatePreferences(userId);
     }
 
     /**
-     * Update user notification preferences.
+     * Update user notification preferences. Reuses existing doc (deletes duplicates).
      */
-    public NotificationPreference updatePreferences(String userId, NotificationPreference preferences) {
-        preferences.setUserId(userId);
-        return preferenceRepository.save(preferences);
+    public NotificationPreference updatePreferences(String userId, NotificationPreference incoming) {
+        NotificationPreference existing = getOrCreatePreferences(userId);
+        existing.setBookingNotifications(incoming.isBookingNotifications());
+        existing.setTicketNotifications(incoming.isTicketNotifications());
+        existing.setCommentNotifications(incoming.isCommentNotifications());
+        existing.setUserId(userId);
+        return preferenceRepository.save(existing);
     }
 
     /**
-     * Create default notification preferences for a user.
-     */
-    private NotificationPreference createPreferences(String userId) {
-        NotificationPreference prefs = new NotificationPreference(userId);
-        return preferenceRepository.save(prefs);
-    }
-
-    /**
-     * Get or create notification preferences.
+     * Get or create notification preferences. Tolerates duplicate documents
+     * by returning the oldest and deleting the rest.
      */
     private NotificationPreference getOrCreatePreferences(String userId) {
-        return preferenceRepository.findByUserId(userId)
-                .orElseGet(() -> createPreferences(userId));
+        java.util.List<NotificationPreference> all = preferenceRepository.findAllByUserId(userId);
+        if (all.isEmpty()) {
+            NotificationPreference prefs = new NotificationPreference(userId);
+            return preferenceRepository.save(prefs);
+        }
+        NotificationPreference keep = all.get(0);
+        if (all.size() > 1) {
+            for (int i = 1; i < all.size(); i++) {
+                preferenceRepository.delete(all.get(i));
+            }
+        }
+        return keep;
     }
 
     /**

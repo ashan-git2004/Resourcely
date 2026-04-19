@@ -279,22 +279,28 @@ public class TicketService {
         }
         
         Ticket savedTicket = ticketRepository.save(ticket);
-        
-        // Send status change notification
-        String message = "Your ticket \"" + ticket.getTitle() + "\" status changed to " + newStatus;
-        if (newStatus == TicketStatus.REJECTED && reason != null) {
-            message = "Your ticket \"" + ticket.getTitle() + "\" was rejected. Reason: " + reason;
+
+        System.out.println("[TICKET] changeStatus done. reporterId=" + ticket.getReporterId()
+                + " newStatus=" + newStatus + " ticketId=" + ticketId);
+
+        try {
+            String message = "Your ticket \"" + ticket.getTitle() + "\" status changed to " + newStatus;
+            if (newStatus == TicketStatus.REJECTED && reason != null) {
+                message = "Your ticket \"" + ticket.getTitle() + "\" was rejected. Reason: " + reason;
+            }
+            notificationService.createNotification(
+                    ticket.getReporterId(),
+                    Notification.NotificationType.TICKET,
+                    "Ticket Status Updated",
+                    message,
+                    ticketId,
+                    ticket.getTitle()
+            );
+        } catch (Exception e) {
+            System.out.println("[TICKET] notification FAILED: " + e.getMessage());
+            e.printStackTrace();
         }
-        
-        notificationService.createNotification(
-                ticket.getReporterId(),
-                Notification.NotificationType.TICKET,
-                "Ticket Status Changed",
-                message,
-                ticketId,
-                ticket.getTitle()
-        );
-        
+
         return savedTicket;
     }
 

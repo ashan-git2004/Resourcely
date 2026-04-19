@@ -13,6 +13,9 @@ public interface NotificationPreferenceRepository extends MongoRepository<Notifi
     
     /**
      * Find notification preferences by user ID.
+     * Uses findFirst to tolerate duplicate documents (returns the oldest).
      */
-    Optional<NotificationPreference> findByUserId(String userId);
+    Optional<NotificationPreference> findFirstByUserIdOrderByIdAsc(String userId);
+
+    java.util.List<NotificationPreference> findAllByUserId(String userId);
 }

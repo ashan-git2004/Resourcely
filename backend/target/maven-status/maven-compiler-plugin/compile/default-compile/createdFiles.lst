@@ -32,7 +32,6 @@ com/smartcampus/dto/request/CreateBookingRequest.class
 com/smartcampus/config/SecurityConfig.class
 com/smartcampus/exception/ResourceNotFoundException.class
 com/smartcampus/dto/response/AdminUserResponse.class
-com/smartcampus/model/User.class
 com/smartcampus/exception/BadRequestException.class
 com/smartcampus/controller/UserBookingController.class
 com/smartcampus/dto/response/NotificationResponse.class
@@ -76,5 +75,4 @@ com/smartcampus/model/Notification$NotificationType.class
 com/smartcampus/model/TicketStatus.class
 com/smartcampus/repository/TicketCommentRepository.class
 com/smartcampus/service/QrCodeService.class
-com/smartcampus/repository/UserRepository.class
 com/smartcampus/config/AdminBootstrapSeeder.class
