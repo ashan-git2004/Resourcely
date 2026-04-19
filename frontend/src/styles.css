@@ -147,7 +147,7 @@ body {
   }
 
   .ghost-btn {
-    @apply px-5 py-2.5 rounded-xl border border-campus-border bg-transparent hover:bg-rgba-white-5 cursor-pointer inline-flex justify-center items-center no-underline font-medium;
+    @apply px-5 py-2.5 rounded-xl border border-campus-border bg-transparent cursor-pointer inline-flex justify-center items-center no-underline font-medium;
     font: inherit;
     transition: all 0.3s ease;
   }
@@ -195,7 +195,7 @@ body {
 
   /* ── User pill ── */
   .user-pill {
-    @apply px-3 py-1.5 rounded-full border border-campus-border text-sm font-medium bg-rgba-white-5;
+    @apply px-3 py-1.5 rounded-full border border-campus-border text-sm font-medium;
     background: rgba(26, 31, 46, 0.5);
     transition: all 0.3s ease;
   }
