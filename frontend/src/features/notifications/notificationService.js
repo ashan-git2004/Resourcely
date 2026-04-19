@@ -1,134 +1,31 @@
-import axios from 'axios';
+const BASE = '/api/user/notifications';
 
-const API_URL = 'http://localhost:8080/api/user/notifications';
+async function req(method, path, token, body) {
+  const res = await fetch(BASE + path, {
+    method,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      ...(body !== undefined && { 'Content-Type': 'application/json' }),
+    },
+    ...(body !== undefined && { body: JSON.stringify(body) }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('application/json') ? res.json() : null;
+}
 
 const notificationService = {
-  /**
-   * Get all notifications for the user
-   */
-  getNotifications: async (token) => {
-    try {
-      const response = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Get unread notifications only
-   */
-  getUnreadNotifications: async (token) => {
-    try {
-      const response = await axios.get(`${API_URL}/unread`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching unread notifications:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Get count of unread notifications
-   */
-  getUnreadCount: async (token) => {
-    try {
-      const response = await axios.get(`${API_URL}/unread/count`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-      return 0;
-    }
-  },
-
-  /**
-   * Mark a notification as read
-   */
-  markAsRead: async (notificationId, token) => {
-    try {
-      const response = await axios.put(
-        `${API_URL}/${notificationId}/read`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Mark all notifications as read
-   */
-  markAllAsRead: async (token) => {
-    try {
-      const response = await axios.put(
-        `${API_URL}/read-all`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error marking all as read:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Delete a notification
-   */
-  deleteNotification: async (notificationId, token) => {
-    try {
-      const response = await axios.delete(
-        `${API_URL}/${notificationId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Get user notification preferences
-   */
-  getPreferences: async (token) => {
-    try {
-      const response = await axios.get(`${API_URL}/preferences`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching preferences:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Update user notification preferences
-   */
-  updatePreferences: async (preferences, token) => {
-    try {
-      const response = await axios.put(
-        `${API_URL}/preferences`,
-        preferences,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error updating preferences:', error);
-      throw error;
-    }
-  }
+  getNotifications:       (token)              => req('GET',    '',                token),
+  getUnreadNotifications: (token)              => req('GET',    '/unread',         token),
+  getUnreadCount:         (token)              => req('GET',    '/unread/count',   token),
+  markAsRead:             (id, token)          => req('PUT',    `/${id}/read`,     token, {}),
+  markAllAsRead:          (token)              => req('PUT',    '/read-all',       token, {}),
+  deleteNotification:     (id, token)          => req('DELETE', `/${id}`,          token),
+  getPreferences:         (token)              => req('GET',    '/preferences',    token),
+  updatePreferences:      (prefs, token)       => req('PUT',    '/preferences',    token, prefs),
 };
 
 export default notificationService;

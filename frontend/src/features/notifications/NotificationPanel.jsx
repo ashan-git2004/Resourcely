@@ -79,7 +79,7 @@ const NotificationPanel = () => {
     <div className="absolute top-[50px] right-0 z-[1000] w-[360px] max-w-[90vw] max-h-[600px] flex flex-col bg-white rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.1)] overflow-hidden border border-[#e0e0e0]">
       {/* Header */}
       <div className="flex justify-between items-center px-4 py-3 border-b border-[#e0e0e0]">
-        <h3 className="m-0 text-[18px] font-semibold flex items-center gap-2">
+        <h3 className="m-0 text-[18px] font-semibold flex items-center gap-2" style={{ color: '#333' }}>
           Notifications
           {unreadCount > 0 && (
             <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
@@ -98,11 +98,11 @@ const NotificationPanel = () => {
       </div>
 
       {loading && (
-        <div className="px-5 py-5 text-center text-[#999]">Loading notifications…</div>
+        <div className="px-5 py-5 text-center" style={{ color: '#666' }}>Loading notifications…</div>
       )}
 
       {!loading && notifications.length === 0 && (
-        <div className="flex-1 flex items-center justify-center px-5 py-10 text-[#999]">
+        <div className="flex-1 flex items-center justify-center px-5 py-10" style={{ color: '#666' }}>
           <p>No notifications yet</p>
         </div>
       )}
@@ -139,7 +139,8 @@ const NotificationPanel = () => {
                   </button>
                 )}
                 <button
-                  className="bg-transparent border-none w-6 h-6 flex items-center justify-center cursor-pointer rounded text-xs text-[#999] hover:bg-[#f5f5f5] hover:text-red-500 transition-colors"
+                  className="bg-transparent border-none w-6 h-6 flex items-center justify-center cursor-pointer rounded text-xs hover:bg-[#f5f5f5] hover:text-red-500 transition-colors"
+                  style={{ color: '#999' }}
                   onClick={() => handleDelete(n.id)}
                   title="Delete"
                 >
@@ -152,7 +153,7 @@ const NotificationPanel = () => {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-[#e0e0e0] text-center text-[11px] text-[#aaa] bg-[#fafafa]">
+      <div className="px-4 py-2 border-t border-[#e0e0e0] text-center text-[11px] bg-[#fafafa]" style={{ color: '#555' }}>
         Notifications are checked every 30 seconds
       </div>
     </div>
