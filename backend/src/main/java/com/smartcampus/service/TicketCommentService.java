@@ -2,6 +2,7 @@ package com.smartcampus.service;
 
 import com.smartcampus.exception.BadRequestException;
 import com.smartcampus.exception.ResourceNotFoundException;
+import com.smartcampus.model.Notification;
 import com.smartcampus.model.Ticket;
 import com.smartcampus.model.TicketComment;
 import com.smartcampus.model.TicketStatus;
@@ -19,13 +20,16 @@ public class TicketCommentService {
     private final TicketCommentRepository commentRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public TicketCommentService(TicketCommentRepository commentRepository,
                                  TicketRepository ticketRepository,
-                                 UserRepository userRepository) {
+                                 UserRepository userRepository,
+                                 NotificationService notificationService) {
         this.commentRepository = commentRepository;
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public TicketComment createComment(String ticketId, String authorId, String content) {
@@ -47,7 +51,22 @@ public class TicketCommentService {
         Instant now = Instant.now();
         comment.setCreatedAt(now);
         comment.setUpdatedAt(now);
-        return Objects.requireNonNull(commentRepository.save(comment));
+        
+        TicketComment savedComment = Objects.requireNonNull(commentRepository.save(comment));
+        
+        // Send notification to ticket reporter if they're not the comment author
+        if (!ticket.getReporterId().equals(authorId)) {
+            notificationService.createNotification(
+                    ticket.getReporterId(),
+                    Notification.NotificationType.COMMENT,
+                    "New Comment on Your Ticket",
+                    "A new comment has been added to your ticket \"" + ticket.getTitle() + "\".",
+                    ticketId,
+                    ticket.getTitle()
+            );
+        }
+        
+        return savedComment;
     }
 
     public List<TicketComment> getComments(String ticketId) {

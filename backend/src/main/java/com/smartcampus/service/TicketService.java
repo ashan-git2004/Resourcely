@@ -6,6 +6,7 @@ import com.smartcampus.dto.request.UpdateUserTicketRequest;
 import com.smartcampus.dto.response.AttachmentMetaResponse;
 import com.smartcampus.exception.BadRequestException;
 import com.smartcampus.exception.ResourceNotFoundException;
+import com.smartcampus.model.Notification;
 import com.smartcampus.model.Resource;
 import com.smartcampus.model.Ticket;
 import com.smartcampus.model.TicketAttachment;
@@ -47,17 +48,20 @@ public class TicketService {
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
     private final MongoTemplate mongoTemplate;
+    private final NotificationService notificationService;
 
     public TicketService(TicketRepository ticketRepository,
                          TicketAttachmentRepository attachmentRepository,
                          UserRepository userRepository,
                          ResourceRepository resourceRepository,
-                         MongoTemplate mongoTemplate) {
+                         MongoTemplate mongoTemplate,
+                         NotificationService notificationService) {
         this.ticketRepository = ticketRepository;
         this.attachmentRepository = attachmentRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
         this.mongoTemplate = mongoTemplate;
+        this.notificationService = notificationService;
     }
 
     // ===== USER OPERATIONS =====
@@ -273,7 +277,25 @@ public class TicketService {
         if (newStatus == TicketStatus.RESOLVED) {
             ticket.setResolvedAt(now);
         }
-        return ticketRepository.save(ticket);
+        
+        Ticket savedTicket = ticketRepository.save(ticket);
+        
+        // Send status change notification
+        String message = "Your ticket \"" + ticket.getTitle() + "\" status changed to " + newStatus;
+        if (newStatus == TicketStatus.REJECTED && reason != null) {
+            message = "Your ticket \"" + ticket.getTitle() + "\" was rejected. Reason: " + reason;
+        }
+        
+        notificationService.createNotification(
+                ticket.getReporterId(),
+                Notification.NotificationType.TICKET,
+                "Ticket Status Changed",
+                message,
+                ticketId,
+                ticket.getTitle()
+        );
+        
+        return savedTicket;
     }
 
     public Ticket assignTechnician(String ticketId, String technicianId, String adminId) {

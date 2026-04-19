@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import NotificationPanel from "../features/notifications/NotificationPanel";
+import NotificationPreferences from "../features/notifications/NotificationPreferences";
 
 export default function Navbar() {
   const { isAuthenticated, auth, logout } = useAuth();
   const isAdmin = (auth?.roles || []).includes("ADMIN");
   const isTechnician = (auth?.roles || []).includes("TECHNICIAN");
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
 
   return (
     <header className="topbar">
@@ -62,6 +66,34 @@ export default function Navbar() {
             <NavLink to="/dashboard/student/bookings" className="nav-link">
               My Bookings
             </NavLink>
+            
+            {/* Notification Bell */}
+            <div className="notification-menu">
+              <button 
+                className="notification-bell"
+                onClick={() => setNotificationPanelOpen(!notificationPanelOpen)}
+                title="Notifications"
+              >
+                🔔
+              </button>
+              {notificationPanelOpen && (
+                <NotificationPanel />
+              )}
+            </div>
+
+            {/* Preferences */}
+            <button
+              className="preferences-btn"
+              onClick={() => setShowPreferences(true)}
+              title="Notification Preferences"
+            >
+              ⚙️
+            </button>
+
+            {showPreferences && (
+              <NotificationPreferences onClose={() => setShowPreferences(false)} />
+            )}
+            
             <span className="user-pill">{auth?.email}</span>
             <button type="button" className="ghost-btn" onClick={logout}>
               Logout
@@ -125,6 +157,39 @@ export default function Navbar() {
 
         .dropdown-link:last-child {
           border-radius: 0 0 4px 4px;
+        }
+
+        .notification-menu {
+          position: relative;
+          display: inline-block;
+        }
+
+        .notification-bell {
+          background: none;
+          border: none;
+          font-size: 1.2rem;
+          cursor: pointer;
+          padding: 0.5rem 0.8rem;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+
+        .notification-bell:hover {
+          background-color: #f0f0f0;
+        }
+
+        .preferences-btn {
+          background: none;
+          border: none;
+          font-size: 1.2rem;
+          cursor: pointer;
+          padding: 0.5rem 0.8rem;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+
+        .preferences-btn:hover {
+          background-color: #f0f0f0;
         }
       `}</style>
     </header>

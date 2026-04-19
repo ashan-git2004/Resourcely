@@ -5,6 +5,7 @@ import com.smartcampus.exception.BadRequestException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.model.Booking;
 import com.smartcampus.model.BookingStatus;
+import com.smartcampus.model.Notification;
 import com.smartcampus.model.Resource;
 import com.smartcampus.repository.BookingRepository;
 import com.smartcampus.repository.ResourceRepository;
@@ -23,13 +24,16 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ResourceRepository resourceRepository;
     private final MongoTemplate mongoTemplate;
+    private final NotificationService notificationService;
 
     public BookingService(BookingRepository bookingRepository,
                           ResourceRepository resourceRepository,
-                          MongoTemplate mongoTemplate) {
+                          MongoTemplate mongoTemplate,
+                          NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
         this.resourceRepository = resourceRepository;
         this.mongoTemplate = mongoTemplate;
+        this.notificationService = notificationService;
     }
 
     // ===== USER OPERATIONS =====
@@ -265,7 +269,21 @@ public class BookingService {
         booking.setApprovedAt(Instant.now());
         booking.setUpdatedAt(Instant.now());
 
-        return bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        // Send approval notification
+        Resource resource = resourceRepository.findById(booking.getResourceId()).orElse(null);
+        String resourceName = resource != null ? resource.getName() : "Resource";
+        notificationService.createNotification(
+                booking.getUserId(),
+                Notification.NotificationType.BOOKING,
+                "Booking Approved",
+                "Your booking for " + resourceName + " has been approved.",
+                bookingId,
+                resourceName
+        );
+        
+        return savedBooking;
     }
 
     /**
@@ -288,7 +306,21 @@ public class BookingService {
         booking.setApprovedAt(Instant.now());
         booking.setUpdatedAt(Instant.now());
 
-        return bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        // Send rejection notification with reason
+        Resource resource = resourceRepository.findById(booking.getResourceId()).orElse(null);
+        String resourceName = resource != null ? resource.getName() : "Resource";
+        notificationService.createNotification(
+                booking.getUserId(),
+                Notification.NotificationType.BOOKING,
+                "Booking Rejected",
+                "Your booking for " + resourceName + " has been rejected. Reason: " + reason,
+                bookingId,
+                resourceName
+        );
+        
+        return savedBooking;
     }
 
     // ===== QR CODE CHECK-IN OPERATIONS =====
