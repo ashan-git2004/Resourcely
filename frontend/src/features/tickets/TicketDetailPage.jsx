@@ -20,6 +20,31 @@ export default function TicketDetailPage() {
   const [resolutionNotes, setResolutionNotes] = useState("");
   const [updating, setUpdating] = useState(false);
 
+  function formatDurationFromDates(startAt, endAt, fallbackMinutes) {
+    if (startAt && endAt) {
+      const startMs = new Date(startAt).getTime();
+      const endMs = new Date(endAt).getTime();
+
+      if (!Number.isNaN(startMs) && !Number.isNaN(endMs) && endMs >= startMs) {
+        return formatDuration(Math.floor((endMs - startMs) / 1000));
+      }
+    }
+
+    if (typeof fallbackMinutes === "number" && fallbackMinutes >= 0) {
+      return formatDuration(fallbackMinutes * 60);
+    }
+
+    return "Pending";
+  }
+
+  function formatDuration(totalSeconds) {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+
   useEffect(() => {
     loadTicket();
   }, [ticketId]);
@@ -188,13 +213,21 @@ export default function TicketDetailPage() {
           <div className="sla-item">
             <span className="sla-label">First response</span>
             <span className="sla-value">
-              {ticket?.timeToFirstResponseMinutes !== null ? `${ticket.timeToFirstResponseMinutes}m` : "Pending"}
+              {formatDurationFromDates(
+                ticket?.createdAt,
+                ticket?.firstResponseAt,
+                ticket?.timeToFirstResponseMinutes
+              )}
             </span>
           </div>
           <div className="sla-item">
             <span className="sla-label">Resolution time</span>
             <span className="sla-value">
-              {ticket?.timeToResolutionMinutes !== null ? `${ticket.timeToResolutionMinutes}m` : "Pending"}
+              {formatDurationFromDates(
+                ticket?.createdAt,
+                ticket?.resolvedAt,
+                ticket?.timeToResolutionMinutes
+              )}
             </span>
           </div>
         </section>
