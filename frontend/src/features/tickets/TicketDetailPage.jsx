@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import TicketComments from "./TicketComments";
-import { getTicketDetail, updateTicketPriority, updateTicketStatus } from "./ticketService";
+import {
+  getTicketDetail,
+  updateResolutionNotes,
+  updateTicketPriority,
+  updateTicketStatus,
+} from "./ticketService";
 
 export default function TicketDetailPage() {
   const { ticketId } = useParams();
@@ -12,6 +17,7 @@ export default function TicketDetailPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [selectedPriority, setSelectedPriority] = useState("MEDIUM");
+  const [resolutionNotes, setResolutionNotes] = useState("");
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
@@ -33,6 +39,18 @@ export default function TicketDetailPage() {
   }
 
   async function handleStatusUpdate(newStatus) {
+    const requiresResolutionNotes = newStatus === "RESOLVED" || newStatus === "CLOSED";
+
+    if (requiresResolutionNotes && !hasSavedResolutionNotes) {
+      setError(
+        hasUnsavedResolutionNotes
+          ? "Save the resolution notes before resolving or closing the ticket."
+          : "Add and save resolution notes before resolving or closing the ticket."
+      );
+      setSuccess("");
+      return;
+    }
+
     try {
       setUpdating(true);
       setError("");
@@ -48,12 +66,40 @@ export default function TicketDetailPage() {
   }
 
   async function handlePriorityUpdate() {
+    if (!isPriorityChanged) {
+      setError("Choose a different priority before updating.");
+      setSuccess("");
+      return;
+    }
+
     try {
       setUpdating(true);
       setError("");
       setSuccess("");
       await updateTicketPriority(ticketId, selectedPriority, auth.token);
       setSuccess(`Priority updated to ${selectedPriority}.`);
+      loadTicket();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  async function handleResolutionNotesUpdate() {
+    if (!trimmedResolutionNotes) {
+      setError("Resolution notes cannot be empty.");
+      setSuccess("");
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      setError("");
+      setSuccess("");
+      await updateResolutionNotes(ticketId, trimmedResolutionNotes, auth.token);
+      setResolutionNotes("");
+      setSuccess("Resolution notes saved.");
       loadTicket();
     } catch (err) {
       setError(err.message);
@@ -74,6 +120,11 @@ export default function TicketDetailPage() {
   const isTechnicianView = (auth?.roles || []).includes("TECHNICIAN");
   const backLink = isTechnicianView ? "/technician/tickets" : "/dashboard/student";
   const backLabel = isTechnicianView ? "Back to assigned tickets" : "Back to dashboard";
+  const trimmedResolutionNotes = resolutionNotes.trim();
+  const savedResolutionNotes = ticket?.resolutionNotes?.trim() || "";
+  const hasSavedResolutionNotes = savedResolutionNotes.length > 0;
+  const hasUnsavedResolutionNotes = trimmedResolutionNotes.length > 0;
+  const isPriorityChanged = selectedPriority !== ticket?.priority;
 
   if (loading && !ticket) return <div className="layout">Loading ticket details...</div>;
 
@@ -121,6 +172,10 @@ export default function TicketDetailPage() {
             <label>Description</label>
             <span>{ticket?.description || "No description provided."}</span>
           </div>
+          <div className="info-row">
+            <label>Resolution notes</label>
+            <span>{ticket?.resolutionNotes || "No resolution notes added yet."}</span>
+          </div>
         </section>
 
         <section className="sla-grid">
@@ -150,7 +205,7 @@ export default function TicketDetailPage() {
                   <button
                     key={newStatus}
                     onClick={() => handleStatusUpdate(newStatus)}
-                    disabled={updating}
+                    disabled={updating || ((newStatus === "RESOLVED" || newStatus === "CLOSED") && !hasSavedResolutionNotes)}
                     className="primary-btn compact-primary-btn"
                   >
                     Mark as {newStatus.replace("_", " ")}
@@ -174,10 +229,45 @@ export default function TicketDetailPage() {
                   <option value="MEDIUM">Medium</option>
                   <option value="HIGH">High</option>
                 </select>
-                <button onClick={handlePriorityUpdate} disabled={updating} className="ghost-btn compact-action-btn">
+                <button
+                  onClick={handlePriorityUpdate}
+                  disabled={updating || !isPriorityChanged}
+                  className="ghost-btn compact-action-btn"
+                >
                   Update priority
                 </button>
               </div>
+            </div>
+
+            <div style={{ marginTop: "1rem" }}>
+              <label htmlFor="resolution-notes" style={{ display: "block", marginBottom: "0.45rem", fontWeight: 600 }}>
+                Resolution notes
+              </label>
+              <textarea
+                id="resolution-notes"
+                className="input"
+                rows="5"
+                value={resolutionNotes}
+                onChange={(e) => setResolutionNotes(e.target.value)}
+                placeholder="Add the fix performed, root cause, or follow-up instructions."
+                disabled={updating}
+                maxLength={2000}
+              />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", marginTop: "0.75rem" }}>
+                <span className="muted">{resolutionNotes.length}/2000 characters</span>
+                <button
+                  onClick={handleResolutionNotesUpdate}
+                  disabled={updating || !trimmedResolutionNotes}
+                  className="ghost-btn compact-action-btn"
+                >
+                  Save notes
+                </button>
+              </div>
+              {!hasSavedResolutionNotes && (
+                <p className="muted" style={{ marginTop: "0.6rem", marginBottom: 0 }}>
+                  Resolution notes must be saved before you can mark this ticket as resolved or closed.
+                </p>
+              )}
             </div>
           </footer>
         )}

@@ -60,6 +60,13 @@ export function updateTicketPriority(ticketId, priority, token) {
   });
 }
 
+export function updateResolutionNotes(ticketId, resolutionNotes, token) {
+  return request("PATCH", `/api/technician/tickets/${ticketId}/resolution-notes`, {
+    payload: { resolutionNotes },
+    token,
+  });
+}
+
 // 2. Staff / Technician Comments
 export function getTicketComments(ticketId, token) {
   return request("GET", `/api/tickets/${ticketId}/comments`, { token });

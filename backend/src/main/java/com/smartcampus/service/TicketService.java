@@ -2,6 +2,7 @@ package com.smartcampus.service;
 
 import com.smartcampus.dto.TicketDTO;
 import com.smartcampus.dto.request.CreateTicketRequest;
+import com.smartcampus.dto.request.UpdateResolutionNotesRequest;
 import com.smartcampus.dto.request.UpdateTicketPriorityRequest;
 import com.smartcampus.dto.request.UpdateTicketStatusRequest;
 import com.smartcampus.exception.BadRequestException;
@@ -135,6 +136,7 @@ public class TicketService {
         Ticket ticket = getTicketEntity(ticketId);
         validateTechnicianAssignment(ticket, technician);
         validateStatusTransition(ticket.getStatus(), request.getStatus());
+        validateResolutionNotesBeforeCompletion(ticket, request.getStatus());
 
         Instant now = Instant.now();
         if (ticket.getStatus() == TicketStatus.OPEN
@@ -172,6 +174,24 @@ public class TicketService {
 
         Ticket savedTicket = ticketRepository.save(ticket);
         notifyOwnerOnUpdate(savedTicket, "Ticket priority updated", "Your ticket priority is now " + savedTicket.getPriority() + ".");
+        return convertToDTO(savedTicket);
+    }
+
+    public TicketDTO updateResolutionNotes(
+            String ticketId,
+            UpdateResolutionNotesRequest request,
+            String currentUserEmail
+    ) {
+        User technician = getTechnicianByEmail(currentUserEmail);
+        Ticket ticket = getTicketEntity(ticketId);
+        validateTechnicianAssignment(ticket, technician);
+
+        String trimmedNotes = request.getResolutionNotes() == null ? "" : request.getResolutionNotes().trim();
+        ticket.setResolutionNotes(trimmedNotes.isEmpty() ? null : trimmedNotes);
+        ticket.setUpdatedAt(Instant.now());
+
+        Ticket savedTicket = ticketRepository.save(ticket);
+        notifyOwnerOnUpdate(savedTicket, "Ticket resolution notes updated", "Resolution notes were added to your ticket.");
         return convertToDTO(savedTicket);
     }
 
@@ -243,6 +263,15 @@ public class TicketService {
         }
     }
 
+    private void validateResolutionNotesBeforeCompletion(Ticket ticket, TicketStatus requestedStatus) {
+        boolean requiresResolutionNotes = requestedStatus == TicketStatus.RESOLVED
+                || requestedStatus == TicketStatus.CLOSED;
+
+        if (requiresResolutionNotes && !StringUtils.hasText(ticket.getResolutionNotes())) {
+            throw new BadRequestException("Add resolution notes before resolving or closing the ticket.");
+        }
+    }
+
     private void notifyOwnerOnUpdate(Ticket ticket, String title, String message) {
         if (StringUtils.hasText(ticket.getOwnerId())) {
             notificationService.createNotification(ticket.getOwnerId(), title, message, ticket.getId());
@@ -261,6 +290,7 @@ public class TicketService {
         dto.setOwnerEmail(ticket.getOwnerEmail());
         dto.setAssignedTechnicianId(ticket.getAssignedTechnicianId());
         dto.setAssignedTechnicianEmail(ticket.getAssignedTechnicianEmail());
+        dto.setResolutionNotes(ticket.getResolutionNotes());
         dto.setCreatedAt(ticket.getCreatedAt());
         dto.setUpdatedAt(ticket.getUpdatedAt());
         dto.setFirstResponseAt(ticket.getFirstResponseAt());

@@ -28,6 +28,8 @@ public class Ticket {
 
     private String assignedTechnicianEmail;
 
+    private String resolutionNotes;
+
     private Instant createdAt = Instant.now();
 
     private Instant updatedAt = Instant.now();
@@ -121,6 +123,14 @@ public class Ticket {
 
     public void setAssignedTechnicianEmail(String assignedTechnicianEmail) {
         this.assignedTechnicianEmail = assignedTechnicianEmail;
+    }
+
+    public String getResolutionNotes() {
+        return resolutionNotes;
+    }
+
+    public void setResolutionNotes(String resolutionNotes) {
+        this.resolutionNotes = resolutionNotes;
     }
 
     public Instant getCreatedAt() {
