@@ -93,6 +93,12 @@ export default function TicketDetailPage() {
       return;
     }
 
+    if (trimmedResolutionNotes === savedResolutionNotes) {
+      setError("Update the resolution notes before saving again.");
+      setSuccess("");
+      return;
+    }
+
     try {
       setUpdating(true);
       setError("");

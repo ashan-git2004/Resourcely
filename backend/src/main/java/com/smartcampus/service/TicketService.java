@@ -169,7 +169,12 @@ public class TicketService {
         Ticket ticket = getTicketEntity(ticketId);
         validateTechnicianAssignment(ticket, technician);
 
-        ticket.setPriority(request.toTicketPriority());
+        TicketPriority newPriority = request.toTicketPriority();
+        if (ticket.getPriority() == newPriority) {
+            throw new BadRequestException("Choose a different priority before updating.");
+        }
+
+        ticket.setPriority(newPriority);
         ticket.setUpdatedAt(Instant.now());
 
         Ticket savedTicket = ticketRepository.save(ticket);
@@ -187,6 +192,15 @@ public class TicketService {
         validateTechnicianAssignment(ticket, technician);
 
         String trimmedNotes = request.getResolutionNotes() == null ? "" : request.getResolutionNotes().trim();
+        if (!StringUtils.hasText(trimmedNotes)) {
+            throw new BadRequestException("Resolution notes cannot be empty.");
+        }
+
+        String currentNotes = ticket.getResolutionNotes() == null ? "" : ticket.getResolutionNotes().trim();
+        if (trimmedNotes.equals(currentNotes)) {
+            throw new BadRequestException("Update the resolution notes before saving again.");
+        }
+
         ticket.setResolutionNotes(trimmedNotes.isEmpty() ? null : trimmedNotes);
         ticket.setUpdatedAt(Instant.now());
 
