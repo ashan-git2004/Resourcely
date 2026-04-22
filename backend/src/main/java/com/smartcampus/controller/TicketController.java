@@ -64,6 +64,7 @@ public class TicketController {
             @PathVariable String ticketId,
             Authentication authentication
     ) {
+        // VIVA: Comment READ endpoint.
         return ResponseEntity.ok(commentService.getCommentsByTicketId(ticketId, authentication.getName()));
     }
 
@@ -74,6 +75,7 @@ public class TicketController {
             @Valid @RequestBody CommentRequest request,
             Authentication authentication
     ) {
+        // VIVA: Comment CREATE endpoint.
         CommentDTO comment = commentService.addComment(ticketId, authentication.getName(), request.getContent());
         return ResponseEntity.status(HttpStatus.CREATED).body(comment);
     }
@@ -86,6 +88,7 @@ public class TicketController {
             @Valid @RequestBody CommentRequest request,
             Authentication authentication
     ) {
+        // VIVA: Comment UPDATE endpoint.
         return ResponseEntity.ok(
                 commentService.updateComment(ticketId, commentId, authentication.getName(), request.getContent())
         );
@@ -98,6 +101,7 @@ public class TicketController {
             @PathVariable String commentId,
             Authentication authentication
     ) {
+        // VIVA: Comment DELETE endpoint.
         commentService.deleteComment(ticketId, commentId, authentication.getName());
         return ResponseEntity.noContent().build();
     }

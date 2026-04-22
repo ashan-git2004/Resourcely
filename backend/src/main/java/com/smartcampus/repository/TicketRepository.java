@@ -12,6 +12,7 @@ public interface TicketRepository extends MongoRepository<Ticket, String> {
 
     List<Ticket> findByOwnerIdOrderByCreatedAtDesc(String ownerId);
 
+    // VIVA: Repository queries used by the technician queue and its backend filters.
     List<Ticket> findByAssignedTechnicianIdOrderByCreatedAtDesc(String technicianId);
 
     List<Ticket> findByAssignedTechnicianIdAndStatusOrderByCreatedAtDesc(String technicianId, TicketStatus status);

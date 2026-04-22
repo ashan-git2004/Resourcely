@@ -25,7 +25,7 @@ async function request(method, path, { payload, token } = {}) {
   return data;
 }
 
-// 1. Technician Ticket Handling
+// VIVA: Frontend-to-backend technician ticket REST API layer.
 export function getAssignedTickets(token, filters = {}) {
   const params = new URLSearchParams();
   if (filters.status) params.append("status", filters.status);
@@ -67,7 +67,7 @@ export function updateResolutionNotes(ticketId, resolutionNotes, token) {
   });
 }
 
-// 2. Staff / Technician Comments
+// VIVA: Ticket comment REST API layer shared by students, technicians, admins, and managers.
 export function getTicketComments(ticketId, token) {
   return request("GET", `/api/tickets/${ticketId}/comments`, { token });
 }

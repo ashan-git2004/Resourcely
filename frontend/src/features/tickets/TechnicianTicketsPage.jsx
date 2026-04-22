@@ -19,6 +19,7 @@ export default function TechnicianTicketsPage() {
   async function loadTickets() {
     try {
       setLoading(true);
+      // VIVA: Technician assigned-ticket list API call with backend status/priority filtering.
       const data = await getAssignedTickets(auth.token, filters);
       setTickets(data || []);
       setError("");
@@ -34,12 +35,14 @@ export default function TechnicianTicketsPage() {
     setFilters((prev) => ({ ...prev, [name]: value }));
   }
 
+  // VIVA: Search bar logic runs on the already fetched assigned-ticket list by title or ticket ID.
   const filteredTickets = tickets.filter(
     (t) =>
       t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // VIVA: Client-side sorting for the technician queue cards.
   const sortedTickets = [...filteredTickets].sort((a, b) => {
     switch (sortBy) {
       case "oldest":
@@ -79,6 +82,7 @@ export default function TechnicianTicketsPage() {
         </div>
 
         <div className="filter-controls">
+          {/* VIVA: Technician ticket filters passed to the backend as query params. */}
           <select name="status" value={filters.status} onChange={handleFilterChange} className="filter-select">
             <option value="">All statuses</option>
             <option value="OPEN">Open</option>
@@ -103,7 +107,9 @@ export default function TechnicianTicketsPage() {
       </div>
 
       {!loading && tickets.length > 0 && (
-        <div className="ticket-stats">
+        <>
+          {/* VIVA: Ticket progress mini-dashboard showing technician workload breakdown. */}
+          <div className="ticket-stats">
           <div className="stat-item">
             <span className="stat-label">Total</span>
             <span className="stat-value">{tickets.length}</span>
@@ -120,7 +126,8 @@ export default function TechnicianTicketsPage() {
             <span className="stat-label">High</span>
             <span className="stat-value">{tickets.filter((t) => t.priority === "HIGH").length}</span>
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       {error && <div className="alert" style={{ marginBottom: "1rem" }}>{error}</div>}

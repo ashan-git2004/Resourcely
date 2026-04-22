@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface CommentRepository extends MongoRepository<Comment, String> {
+    // VIVA: Comments are loaded in ascending order to show the discussion timeline.
     List<Comment> findByTicketIdOrderByCreatedAtAsc(String ticketId);
 }

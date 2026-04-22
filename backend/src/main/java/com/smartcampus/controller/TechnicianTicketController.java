@@ -37,6 +37,7 @@ public class TechnicianTicketController {
             @RequestParam(required = false) TicketPriority priority,
             Authentication authentication
     ) {
+        // VIVA: Assigned-ticket list endpoint with optional status and priority filters.
         return ResponseEntity.ok(ticketService.getTechnicianTickets(authentication.getName(), status, priority));
     }
 
@@ -46,6 +47,7 @@ public class TechnicianTicketController {
             @PathVariable String ticketId,
             Authentication authentication
     ) {
+        // VIVA: Technician-only ticket detail endpoint.
         return ResponseEntity.ok(ticketService.getTechnicianTicketById(ticketId, authentication.getName()));
     }
 
@@ -56,6 +58,7 @@ public class TechnicianTicketController {
             @Valid @RequestBody UpdateTicketStatusRequest request,
             Authentication authentication
     ) {
+        // VIVA: Status transition endpoint.
         return ResponseEntity.ok(ticketService.updateTicketStatus(ticketId, request, authentication.getName()));
     }
 
@@ -66,6 +69,7 @@ public class TechnicianTicketController {
             @Valid @RequestBody UpdateTicketPriorityRequest request,
             Authentication authentication
     ) {
+        // VIVA: Priority update endpoint.
         return ResponseEntity.ok(ticketService.updateTicketPriority(ticketId, request, authentication.getName()));
     }
 
@@ -76,6 +80,7 @@ public class TechnicianTicketController {
             @Valid @RequestBody UpdateResolutionNotesRequest request,
             Authentication authentication
     ) {
+        // VIVA: Resolution notes endpoint.
         return ResponseEntity.ok(ticketService.updateResolutionNotes(ticketId, request, authentication.getName()));
     }
 }
