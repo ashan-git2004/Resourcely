@@ -672,10 +672,12 @@ export default function UserBookingsPage() {
           box-shadow: 0 10px 30px rgba(48,35,8,0.15);
           max-height: 90vh;
           overflow-y: auto;
+          color: #2c2c2c;
         }
 
         .modal-content h2 {
           margin-top: 0;
+          color: #1a1a1a;
         }
 
         .detail-panel {
@@ -690,6 +692,7 @@ export default function UserBookingsPage() {
           display: block;
           margin-bottom: 0.5rem;
           font-weight: 500;
+          color: #333333;
         }
 
         textarea, input[type="text"], input[type="number"], input[type="datetime-local"] {
@@ -700,9 +703,32 @@ export default function UserBookingsPage() {
           background: #fff;
           width: 100%;
           box-sizing: border-box;
+          color: #2c2c2c;
         }
 
-        textarea:focus, input:focus {
+        textarea::placeholder, input::placeholder {
+          color: #999999;
+        }
+
+        .modal-content input,
+        .modal-content select {
+          padding: 0.6rem 0.7rem;
+          border: 1px solid #baa97e;
+          border-radius: 9px;
+          font-family: inherit;
+          background: #fff;
+          color: #2c2c2c;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .modal-content input::placeholder {
+          color: #999999;
+        }
+
+        .modal-content input:focus,
+        .modal-content select:focus,
+        .modal-content textarea:focus {
           outline: 2px solid #6fa89f;
           outline-offset: 1px;
         }

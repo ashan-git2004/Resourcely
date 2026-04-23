@@ -414,10 +414,12 @@ export default function AdminBookingsPage() {
           max-width: 500px;
           width: 90%;
           box-shadow: 0 10px 30px rgba(48, 35, 8, 0.15);
+          color: #2c2c2c;
         }
 
         .modal-content h2 {
           margin-top: 0;
+          color: #1a1a1a;
         }
 
         .form-group {
@@ -428,6 +430,7 @@ export default function AdminBookingsPage() {
           display: block;
           margin-bottom: 0.5rem;
           font-weight: 500;
+          color: #333333;
         }
 
         textarea {
@@ -437,6 +440,11 @@ export default function AdminBookingsPage() {
           font-family: inherit;
           background: #fff;
           resize: vertical;
+          color: #2c2c2c;
+        }
+
+        textarea::placeholder {
+          color: #999999;
         }
 
         textarea:focus {

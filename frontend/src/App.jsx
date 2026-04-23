@@ -1,7 +1,7 @@
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import AppRouter from "./routes/AppRouter";
-import "./styles.css";
+// import "./styles.css";
 
 export default function App() {
   return (

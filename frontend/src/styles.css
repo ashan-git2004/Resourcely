@@ -70,9 +70,9 @@ body {
 
 @layer components {
   /* ── Layout ── */
-  .layout {
+  /* .layout {
     @apply max-w-[520px] mx-auto mt-12 px-4 pb-8;
-  }
+  } */
 
   /* ── Card ── */
   .card {

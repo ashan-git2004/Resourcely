@@ -110,7 +110,8 @@ export default function AdminUsersPage() {
                         padding: "0.25rem 0.5rem",
                         borderRadius: "4px",
                         backgroundColor: user.provider === "GOOGLE" ? "#f0f7ff" : "#f8f8f8",
-                        fontSize: "0.85rem"
+                        fontSize: "0.85rem",
+                        color: "#2c2c2c"
                       }}
                     >
                       {user.provider}
@@ -126,10 +127,10 @@ export default function AdminUsersPage() {
                           [user.id]: event.target.value,
                         }))
                       }
-                      style={{ padding: "0.5rem", borderRadius: "4px" }}
+                      style={{ padding: "0.5rem", borderRadius: "4px", color: "#2c2c2c", backgroundColor: "#fff", border: "1px solid #ccc" }}
                     >
                       {availableRoles.map((role) => (
-                        <option key={role.value} value={role.value}>
+                        <option key={role.value} value={role.value} style={{ color: "#2c2c2c" }}>
                           {role.label}
                         </option>
                       ))}
@@ -160,13 +161,13 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      <div style={{ marginTop: "1.5rem", padding: "1rem", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
-        <h3 style={{ marginTop: 0 }}>Role Descriptions</h3>
-        <ul style={{ fontSize: "0.9rem", lineHeight: "1.8" }}>
-          <li><strong>User (Student):</strong> Can access campus facilities, view schedules, and report issues</li>
-          <li><strong>Technician:</strong> Can manage infrastructure, handle maintenance requests, monitor systems</li>
-          <li><strong>Manager:</strong> Can oversee operations, view analytics, manage resource allocation</li>
-          <li><strong>Admin:</strong> Full system access, can approve users and manage all permissions</li>
+      <div style={{ marginTop: "1.5rem", padding: "1rem", backgroundColor: "#f9f9f9", borderRadius: "8px", color: "#2c2c2c" }}>
+        <h3 style={{ marginTop: 0, color: "#1a1a1a" }}>Role Descriptions</h3>
+        <ul style={{ fontSize: "0.9rem", lineHeight: "1.8", color: "#2c2c2c" }}>
+          <li><strong style={{ color: "#1a1a1a" }}>User (Student):</strong> Can access campus facilities, view schedules, and report issues</li>
+          <li><strong style={{ color: "#1a1a1a" }}>Technician:</strong> Can manage infrastructure, handle maintenance requests, monitor systems</li>
+          <li><strong style={{ color: "#1a1a1a" }}>Manager:</strong> Can oversee operations, view analytics, manage resource allocation</li>
+          <li><strong style={{ color: "#1a1a1a" }}>Admin:</strong> Full system access, can approve users and manage all permissions</li>
         </ul>
       </div>
     </section>
