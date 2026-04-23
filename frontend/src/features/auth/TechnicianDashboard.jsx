@@ -18,7 +18,7 @@ export default function TechnicianDashboard() {
   async function loadTickets() {
     try {
       setLoading(true);
-      // VIVA: Technician dashboard loads the same assigned-ticket feed used by the queue page.
+      // Technician dashboard loads the same assigned-ticket feed used by the queue page.
       const data = await getAssignedTickets(auth.token, filters);
       setTickets(data || []);
       setError("");
@@ -45,7 +45,7 @@ export default function TechnicianDashboard() {
         )
       : 0;
 
-  // VIVA: Dashboard search bar logic for technician queue cards.
+  // Dashboard search bar logic for technician queue cards.
   const filteredTickets = tickets.filter(
     (t) =>
       t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -62,7 +62,7 @@ export default function TechnicianDashboard() {
       </header>
 
       <div className="kpi-cards-section">
-        {/* VIVA: Technician progress dashboard KPI cards. */}
+        {/* Technician progress dashboard KPI cards. */}
         <div className="glass-stat-grid">
           <div className="glass-card">
             <span className="stat-desc">Open tasks</span>

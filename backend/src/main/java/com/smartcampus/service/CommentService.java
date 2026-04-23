@@ -33,7 +33,7 @@ public class CommentService {
     public List<CommentDTO> getCommentsByTicketId(String ticketId, String currentUserEmail) {
         User currentUser = ticketService.getUserByEmail(currentUserEmail);
         Ticket ticket = ticketService.getTicketEntity(ticketId);
-        // VIVA: Comment READ permission reuses the ticket access rules.
+        // Comment READ permission reuses the ticket access rules.
         ticketService.validateTicketAccess(ticket, currentUser);
 
         return commentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId)
@@ -46,7 +46,7 @@ public class CommentService {
         User currentUser = ticketService.getUserByEmail(currentUserEmail);
         Ticket ticket = ticketService.getTicketEntity(ticketId);
 
-        // VIVA: Only ticket participants/admin/manager can add comments.
+        // Only ticket participants/admin/manager can add comments.
         if (!ticketService.canManageComments(ticket, currentUser)) {
             throw new BadRequestException("You do not have access to comment on this ticket.");
         }
@@ -60,7 +60,7 @@ public class CommentService {
         comment.setUpdatedAt(comment.getCreatedAt());
 
         Comment savedComment = commentRepository.save(comment);
-        // VIVA: Comment notifications keep the owner and assigned technician informed.
+        // Comment notifications keep the owner and assigned technician informed.
         notifyCommentParticipants(ticket, currentUser, savedComment);
         return convertToDTO(savedComment);
     }
@@ -72,7 +72,7 @@ public class CommentService {
         Comment comment = getComment(commentId);
         validateCommentTicket(ticketId, comment);
 
-        // VIVA: Only the original comment author can update it.
+        // Only the original comment author can update it.
         if (!isCommentOwner(comment, currentUser)) {
             throw new BadRequestException("You do not have permission to update this comment.");
         }
@@ -89,7 +89,7 @@ public class CommentService {
         Comment comment = getComment(commentId);
         validateCommentTicket(ticketId, comment);
 
-        // VIVA: Only the original comment author can delete it.
+        // Only the original comment author can delete it.
         if (!isCommentOwner(comment, currentUser)) {
             throw new BadRequestException("You do not have permission to delete this comment.");
         }
@@ -103,7 +103,7 @@ public class CommentService {
     }
 
     private void validateCommentTicket(String ticketId, Comment comment) {
-        // VIVA: Prevents cross-ticket comment editing/deletion requests.
+        // Prevents cross-ticket comment editing/deletion requests.
         if (!ticketId.equals(comment.getTicketId())) {
             throw new BadRequestException("Comment does not belong to the specified ticket.");
         }
@@ -114,7 +114,7 @@ public class CommentService {
     }
 
     private void notifyCommentParticipants(Ticket ticket, User commentAuthor, Comment comment) {
-        // VIVA: Notifications are sent to the ticket owner and assigned technician when someone else comments.
+        // Notifications are sent to the ticket owner and assigned technician when someone else comments.
         boolean authorIsTechnician = commentAuthor.getRoles().contains(UserRole.TECHNICIAN);
 
         if (authorIsTechnician && ticket.getOwnerId() != null && !ticket.getOwnerId().equals(commentAuthor.getId())) {

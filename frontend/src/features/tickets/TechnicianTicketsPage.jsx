@@ -19,7 +19,7 @@ export default function TechnicianTicketsPage() {
   async function loadTickets() {
     try {
       setLoading(true);
-      // VIVA: Technician assigned-ticket list API call with backend status/priority filtering.
+      // Technician assigned-ticket list API call with backend status/priority filtering.
       const data = await getAssignedTickets(auth.token, filters);
       setTickets(data || []);
       setError("");
@@ -35,14 +35,14 @@ export default function TechnicianTicketsPage() {
     setFilters((prev) => ({ ...prev, [name]: value }));
   }
 
-  // VIVA: Search bar logic runs on the already fetched assigned-ticket list by title or ticket ID.
+  // Search bar logic runs on the already fetched assigned-ticket list by title or ticket ID.
   const filteredTickets = tickets.filter(
     (t) =>
       t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // VIVA: Client-side sorting for the technician queue cards.
+  // Client-side sorting for the technician queue cards.
   const sortedTickets = [...filteredTickets].sort((a, b) => {
     switch (sortBy) {
       case "oldest":
@@ -82,7 +82,7 @@ export default function TechnicianTicketsPage() {
         </div>
 
         <div className="filter-controls">
-          {/* VIVA: Technician ticket filters passed to the backend as query params. */}
+          {/* Technician ticket filters passed to the backend as query params. */}
           <select name="status" value={filters.status} onChange={handleFilterChange} className="filter-select">
             <option value="">All statuses</option>
             <option value="OPEN">Open</option>
@@ -108,7 +108,7 @@ export default function TechnicianTicketsPage() {
 
       {!loading && tickets.length > 0 && (
         <>
-          {/* VIVA: Ticket progress mini-dashboard showing technician workload breakdown. */}
+          {/* Ticket progress mini-dashboard showing technician workload breakdown. */}
           <div className="ticket-stats">
           <div className="stat-item">
             <span className="stat-label">Total</span>

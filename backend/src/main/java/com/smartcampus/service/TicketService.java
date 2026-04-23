@@ -61,7 +61,7 @@ public class TicketService {
         Ticket savedTicket = ticketRepository.save(ticket);
 
         if (StringUtils.hasText(savedTicket.getAssignedTechnicianId())) {
-            // VIVA: Assignment notification sent when a ticket is created with a technician.
+            // Assignment notification sent when a ticket is created with a technician.
             notificationService.createNotification(
                     savedTicket.getAssignedTechnicianId(),
                     "New ticket assigned",
@@ -92,7 +92,7 @@ public class TicketService {
         User technician = getTechnicianByEmail(currentUserEmail);
 
         List<Ticket> tickets;
-        // VIVA: Backend filtering logic for assigned tickets based on optional status/priority query params.
+        // Backend filtering logic for assigned tickets based on optional status/priority query params.
         if (status != null && priority != null) {
             tickets = ticketRepository.findByAssignedTechnicianIdAndStatusAndPriorityOrderByCreatedAtDesc(
                     technician.getId(),
@@ -137,13 +137,13 @@ public class TicketService {
         User technician = getTechnicianByEmail(currentUserEmail);
         Ticket ticket = getTicketEntity(ticketId);
         validateTechnicianAssignment(ticket, technician);
-        // VIVA: Enforces the allowed technician status flow.
+        // Enforces the allowed technician status flow.
         validateStatusTransition(ticket.getStatus(), request.getStatus());
-        // VIVA: Requires saved resolution notes before completion states.
+        // Requires saved resolution notes before completion states.
         validateResolutionNotesBeforeCompletion(ticket, request.getStatus());
 
         Instant now = Instant.now();
-        // VIVA: First-response SLA timer is captured the first time OPEN moves to IN_PROGRESS.
+        // First-response SLA timer is captured the first time OPEN moves to IN_PROGRESS.
         if (ticket.getStatus() == TicketStatus.OPEN
                 && request.getStatus() == TicketStatus.IN_PROGRESS
                 && ticket.getFirstResponseAt() == null) {
@@ -151,7 +151,7 @@ public class TicketService {
             ticket.setTimeToFirstResponseMinutes(Duration.between(ticket.getCreatedAt(), now).toMinutes());
         }
 
-        // VIVA: Resolution SLA timer is captured the first time the ticket reaches RESOLVED/CLOSED.
+        // Resolution SLA timer is captured the first time the ticket reaches RESOLVED/CLOSED.
         if ((request.getStatus() == TicketStatus.RESOLVED || request.getStatus() == TicketStatus.CLOSED)
                 && ticket.getResolvedAt() == null) {
             ticket.setResolvedAt(now);
@@ -162,7 +162,7 @@ public class TicketService {
         ticket.setUpdatedAt(now);
 
         Ticket savedTicket = ticketRepository.save(ticket);
-        // VIVA: Owner gets notified whenever the technician updates ticket status.
+        // Owner gets notified whenever the technician updates ticket status.
         notifyOwnerOnUpdate(savedTicket, "Ticket status updated", "Your ticket is now " + savedTicket.getStatus());
         return convertToDTO(savedTicket);
     }
@@ -177,7 +177,7 @@ public class TicketService {
         validateTechnicianAssignment(ticket, technician);
 
         TicketPriority newPriority = request.toTicketPriority();
-        // VIVA: Prevents no-op priority updates.
+        // Prevents no-op priority updates.
         if (ticket.getPriority() == newPriority) {
             throw new BadRequestException("Choose a different priority before updating.");
         }
@@ -186,7 +186,7 @@ public class TicketService {
         ticket.setUpdatedAt(Instant.now());
 
         Ticket savedTicket = ticketRepository.save(ticket);
-        // VIVA: Priority changes also trigger owner notifications.
+        // Priority changes also trigger owner notifications.
         notifyOwnerOnUpdate(savedTicket, "Ticket priority updated", "Your ticket priority is now " + savedTicket.getPriority() + ".");
         return convertToDTO(savedTicket);
     }
@@ -201,7 +201,7 @@ public class TicketService {
         validateTechnicianAssignment(ticket, technician);
 
         String trimmedNotes = request.getResolutionNotes() == null ? "" : request.getResolutionNotes().trim();
-        // VIVA: Resolution notes validation.
+        // Resolution notes validation.
         if (!StringUtils.hasText(trimmedNotes)) {
             throw new BadRequestException("Resolution notes cannot be empty.");
         }
@@ -215,7 +215,7 @@ public class TicketService {
         ticket.setUpdatedAt(Instant.now());
 
         Ticket savedTicket = ticketRepository.save(ticket);
-        // VIVA: Owner is notified after the technician saves resolution notes.
+        // Owner is notified after the technician saves resolution notes.
         notifyOwnerOnUpdate(savedTicket, "Ticket resolution notes updated", "Resolution notes were added to your ticket.");
         return convertToDTO(savedTicket);
     }
@@ -226,7 +226,7 @@ public class TicketService {
     }
 
     public void validateTicketAccess(Ticket ticket, User currentUser) {
-        // VIVA: Ticket access control for owner, assigned technician, admin, and manager.
+        // Ticket access control for owner, assigned technician, admin, and manager.
         boolean isOwner = currentUser.getId().equals(ticket.getOwnerId());
         boolean isAssignedTechnician = currentUser.getId().equals(ticket.getAssignedTechnicianId());
         boolean isPrivileged = currentUser.getRoles().contains(UserRole.ADMIN)
@@ -238,7 +238,7 @@ public class TicketService {
     }
 
     public boolean canManageComments(Ticket ticket, User currentUser) {
-        // VIVA: Comment permissions allow owner, assigned technician, admin, or manager.
+        // Comment permissions allow owner, assigned technician, admin, or manager.
         return currentUser.getRoles().contains(UserRole.ADMIN)
                 || currentUser.getRoles().contains(UserRole.MANAGER)
                 || currentUser.getId().equals(ticket.getOwnerId())
@@ -270,14 +270,14 @@ public class TicketService {
     }
 
     private void validateTechnicianAssignment(Ticket ticket, User technician) {
-        // VIVA: Technician actions are limited to their own assigned tickets.
+        // Technician actions are limited to their own assigned tickets.
         if (!technician.getId().equals(ticket.getAssignedTechnicianId())) {
             throw new ResourceNotFoundException("Ticket not found for the current technician.");
         }
     }
 
     private void validateStatusTransition(TicketStatus currentStatus, TicketStatus requestedStatus) {
-        // VIVA: Strict workflow OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED.
+        // Strict workflow OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED.
         boolean valid = switch (currentStatus) {
             case OPEN -> requestedStatus == TicketStatus.IN_PROGRESS;
             case IN_PROGRESS -> requestedStatus == TicketStatus.RESOLVED;
@@ -293,7 +293,7 @@ public class TicketService {
     }
 
     private void validateResolutionNotesBeforeCompletion(Ticket ticket, TicketStatus requestedStatus) {
-        // VIVA: Resolution notes become mandatory for RESOLVED and CLOSED.
+        // Resolution notes become mandatory for RESOLVED and CLOSED.
         boolean requiresResolutionNotes = requestedStatus == TicketStatus.RESOLVED
                 || requestedStatus == TicketStatus.CLOSED;
 
@@ -309,7 +309,7 @@ public class TicketService {
     }
 
     private TicketDTO convertToDTO(Ticket ticket) {
-        // VIVA: DTO exposes both workflow fields and SLA timestamps/durations to the frontend.
+        // DTO exposes both workflow fields and SLA timestamps/durations to the frontend.
         TicketDTO dto = new TicketDTO();
         dto.setId(ticket.getId());
         dto.setTitle(ticket.getTitle());

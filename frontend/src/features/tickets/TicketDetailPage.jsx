@@ -52,7 +52,7 @@ export default function TicketDetailPage() {
   async function loadTicket() {
     try {
       setLoading(true);
-      // VIVA: Technician detail view uses the technician-only endpoint; others use the general ticket endpoint.
+      // Technician detail view uses the technician-only endpoint; others use the general ticket endpoint.
       const data = await getTicketDetail(ticketId, auth.token, auth.roles);
       setTicket(data);
       setSelectedPriority(data.priority || "MEDIUM");
@@ -81,7 +81,7 @@ export default function TicketDetailPage() {
       setUpdating(true);
       setError("");
       setSuccess("");
-      // VIVA: Status transition request for OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED.
+      // Status transition request for OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED.
       await updateTicketStatus(ticketId, newStatus, auth.token);
       setSuccess(`Status updated to ${newStatus.replace("_", " ")}.`);
       loadTicket();
@@ -103,7 +103,7 @@ export default function TicketDetailPage() {
       setUpdating(true);
       setError("");
       setSuccess("");
-      // VIVA: Technician priority update request.
+      // Technician priority update request.
       await updateTicketPriority(ticketId, selectedPriority, auth.token);
       setSuccess(`Priority updated to ${selectedPriority}.`);
       loadTicket();
@@ -131,7 +131,7 @@ export default function TicketDetailPage() {
       setUpdating(true);
       setError("");
       setSuccess("");
-      // VIVA: Resolution notes save request. Notes must exist before resolving/closing the ticket.
+      // Resolution notes save request. Notes must exist before resolving/closing the ticket.
       await updateResolutionNotes(ticketId, trimmedResolutionNotes, auth.token);
       setResolutionNotes("");
       setSuccess("Resolution notes saved.");
@@ -144,7 +144,7 @@ export default function TicketDetailPage() {
   }
 
   const allowedTransitions =
-    // VIVA: UI guard for the allowed technician status flow.
+    // UI guard for the allowed technician status flow.
     {
       OPEN: ["IN_PROGRESS"],
       IN_PROGRESS: ["RESOLVED"],
@@ -215,7 +215,7 @@ export default function TicketDetailPage() {
         </section>
 
         <section className="sla-grid">
-          {/* VIVA: SLA metrics display based on timestamps and stored duration values from the backend. */}
+          {/* SLA metrics display based on timestamps and stored duration values from the backend. */}
           <div className="sla-item">
             <span className="sla-label">First response</span>
             <span className="sla-value">
@@ -246,7 +246,7 @@ export default function TicketDetailPage() {
             <h3 style={{ marginTop: 0 }}>Update Ticket Status</h3>
             <div className="ticket-control-row">
               <div className="status-action-group">
-                {/* VIVA: Status action buttons generated from the allowed transition list. */}
+                {/* Status action buttons generated from the allowed transition list. */}
                 {allowedTransitions.map((newStatus) => (
                   <button
                     key={newStatus}
@@ -286,7 +286,7 @@ export default function TicketDetailPage() {
             </div>
 
             <div style={{ marginTop: "1rem" }}>
-              {/* VIVA: Resolution note editor with 2000-character limit and pre-resolution enforcement. */}
+              {/* Resolution note editor with 2000-character limit and pre-resolution enforcement. */}
               <label htmlFor="resolution-notes" style={{ display: "block", marginBottom: "0.45rem", fontWeight: 600 }}>
                 Resolution notes
               </label>

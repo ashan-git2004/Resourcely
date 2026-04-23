@@ -25,7 +25,7 @@ async function request(method, path, { payload, token } = {}) {
   return data;
 }
 
-// VIVA: Frontend-to-backend technician ticket REST API layer.
+// Frontend-to-backend technician ticket REST API layer.
 export function getAssignedTickets(token, filters = {}) {
   const params = new URLSearchParams();
   if (filters.status) params.append("status", filters.status);
@@ -67,7 +67,7 @@ export function updateResolutionNotes(ticketId, resolutionNotes, token) {
   });
 }
 
-// VIVA: Ticket comment REST API layer shared by students, technicians, admins, and managers.
+// Ticket comment REST API layer shared by students, technicians, admins, and managers.
 export function getTicketComments(ticketId, token) {
   return request("GET", `/api/tickets/${ticketId}/comments`, { token });
 }

@@ -19,7 +19,7 @@ export default function TicketComments({ ticketId }) {
   async function loadComments() {
     try {
       setLoading(true);
-      // VIVA: Comment READ operation.
+      // Comment READ operation.
       const data = await getTicketComments(ticketId, auth.token);
       setComments(data);
       setError("");
@@ -35,7 +35,7 @@ export default function TicketComments({ ticketId }) {
     try {
       setSubmitting(true);
       setError("");
-      // VIVA: Comment CREATE operation.
+      // Comment CREATE operation.
       await addComment(ticketId, newComment, auth.token);
       setNewComment("");
       loadComments();
@@ -51,7 +51,7 @@ export default function TicketComments({ ticketId }) {
     try {
       setSubmitting(true);
       setError("");
-      // VIVA: Comment UPDATE operation.
+      // Comment UPDATE operation.
       await updateComment(ticketId, editingCommentId, editingContent, auth.token);
       setEditingCommentId(null);
       setEditingContent("");
@@ -67,7 +67,7 @@ export default function TicketComments({ ticketId }) {
     if (!window.confirm("Delete this comment?")) return;
     try {
       setError("");
-      // VIVA: Comment DELETE operation.
+      // Comment DELETE operation.
       await deleteComment(ticketId, commentId, auth.token);
       loadComments();
     } catch (err) {
@@ -76,7 +76,7 @@ export default function TicketComments({ ticketId }) {
   }
 
   function isOwnComment(comment) {
-    // VIVA: Only the original author can see edit/delete actions in the UI.
+    // Only the original author can see edit/delete actions in the UI.
     return comment.authorEmail === auth?.email;
   }
 
