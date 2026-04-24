@@ -162,7 +162,7 @@ export default function AppRouter() {
           <Route
             path="/check-in"
             element={
-              <ProtectedRoute allowedRoles={["TECHNICIAN", "MANAGER", "ADMIN"]}>
+              <ProtectedRoute allowedRoles={["USER", "TECHNICIAN", "MANAGER", "ADMIN"]}>
                 <CheckInPage />
               </ProtectedRoute>
             }

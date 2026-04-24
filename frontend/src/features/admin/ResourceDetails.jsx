@@ -1,14 +1,28 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  deleteResource,
   getResourceById,
+  restoreResource,
   updateResource,
   updateResourceStatus,
-  deleteResource,
-  restoreResource,
 } from "./resourceService";
 import { useAuth } from "../../context/AuthContext";
 import ResourceForm from "./ResourceForm";
+import {
+  AlertMessage,
+  Badge,
+  buttonClasses,
+  EmptyState,
+  Field,
+  formatDateTime,
+  formatEnum,
+  getBadgeTone,
+  FullBleedShell,
+  PageHeader,
+  Panel,
+  SectionHeading,
+} from "./AdminUi";
 
 export default function ResourceDetails() {
   const { id } = useParams();
@@ -46,9 +60,9 @@ export default function ResourceDetails() {
     setSuccessMessage("");
     try {
       await updateResource(id, payload, auth?.token);
-      setSuccessMessage(`✓ Resource "${payload.name}" updated successfully`);
+      setSuccessMessage(`Resource \"${payload.name}\" updated successfully.`);
       setIsEditMode(false);
-      setTimeout(() => loadResource(), 800);
+      setTimeout(() => loadResource(), 400);
     } catch (submitError) {
       setError(submitError.message);
     } finally {
@@ -58,18 +72,14 @@ export default function ResourceDetails() {
 
   async function handleStatusToggle() {
     if (!resource) return;
-
-    const newStatus = resource.status === "ACTIVE" ? "OUT_OF_SERVICE" : "ACTIVE";
-
+    const nextStatus = resource.status === "ACTIVE" ? "OUT_OF_SERVICE" : "ACTIVE";
     setBusy(true);
     setError("");
     setSuccessMessage("");
     try {
-      await updateResourceStatus(id, newStatus, auth?.token);
-      setSuccessMessage(
-        `✓ Resource status changed to ${newStatus.replace(/_/g, " ")}`
-      );
-      setTimeout(() => loadResource(), 800);
+      await updateResourceStatus(id, nextStatus, auth?.token);
+      setSuccessMessage(`Resource status changed to ${formatEnum(nextStatus)}.`);
+      setTimeout(() => loadResource(), 400);
     } catch (statusError) {
       setError(statusError.message);
     } finally {
@@ -78,16 +88,13 @@ export default function ResourceDetails() {
   }
 
   async function handleDeleteResource() {
-    if (!window.confirm(`Delete "${resource.name}"? This action will archive the resource.`)) {
-      return;
-    }
-
+    if (!window.confirm(`Archive \"${resource.name}\"?`)) return;
     setBusy(true);
     setError("");
     try {
       await deleteResource(id, auth?.token);
-      setSuccessMessage(`✓ Resource "${resource.name}" archived`);
-      setTimeout(() => navigate("/admin/resources"), 1200);
+      setSuccessMessage(`Resource \"${resource.name}\" archived.`);
+      setTimeout(() => navigate("/admin/resources"), 800);
     } catch (deleteError) {
       setError(deleteError.message);
     } finally {
@@ -96,16 +103,13 @@ export default function ResourceDetails() {
   }
 
   async function handleRestoreResource() {
-    if (!window.confirm(`Restore "${resource.name}"?`)) {
-      return;
-    }
-
+    if (!window.confirm(`Restore \"${resource.name}\"?`)) return;
     setBusy(true);
     setError("");
     try {
       await restoreResource(id, auth?.token);
-      setSuccessMessage(`✓ Resource "${resource.name}" restored`);
-      setTimeout(() => loadResource(), 800);
+      setSuccessMessage(`Resource \"${resource.name}\" restored.`);
+      setTimeout(() => loadResource(), 400);
     } catch (restoreError) {
       setError(restoreError.message);
     } finally {
@@ -115,314 +119,138 @@ export default function ResourceDetails() {
 
   if (loading) {
     return (
-      <section className="card">
-        <p className="muted">Loading resource details...</p>
-      </section>
+      <FullBleedShell>
+        <Panel>
+          <div className="rounded-2xl border border-border bg-background px-4 py-10 text-center text-sm text-muted-foreground">
+            Loading resource details...
+          </div>
+        </Panel>
+      </FullBleedShell>
     );
   }
 
   if (error && !resource) {
     return (
-      <section className="card">
-        <h1>Resource Details</h1>
-        <p className="alert">{error}</p>
-        <button onClick={() => navigate("/admin/resources")} className="secondary-btn">
-          ← Back to Resources
-        </button>
-      </section>
+      <FullBleedShell>
+        <div className="space-y-6">
+          <PageHeader
+            eyebrow="Admin workspace"
+            title="Resource details"
+            description="The selected resource could not be loaded."
+            actions={<Link to="/admin/resources" className={buttonClasses("secondary")}>Back to resources</Link>}
+          />
+          <AlertMessage type="error">{error}</AlertMessage>
+        </div>
+      </FullBleedShell>
     );
   }
 
   if (!resource) {
     return (
-      <section className="card">
-        <h1>Resource Not Found</h1>
-        <p className="muted">The resource you're looking for doesn't exist.</p>
-        <button onClick={() => navigate("/admin/resources")} className="secondary-btn">
-          ← Back to Resources
-        </button>
-      </section>
+      <FullBleedShell>
+        <EmptyState
+          title="Resource not found"
+          description="The resource you were looking for does not exist or is no longer available."
+          action={<Link to="/admin/resources" className={buttonClasses("secondary")}>Back to resources</Link>}
+        />
+      </FullBleedShell>
     );
   }
 
   if (isEditMode) {
     return (
-      <section className="card">
-        <h1>Edit Resource: {resource.name}</h1>
-        {error && <p className="alert">{error}</p>}
-        <ResourceForm
-          resource={resource}
-          onSubmit={handleUpdateResource}
-          onCancel={() => setIsEditMode(false)}
-        />
-      </section>
+      <FullBleedShell>
+        <div className="space-y-6">
+          <PageHeader
+            // eyebrow="Admin workspace"
+            title={`Edit ${resource.name}`}
+            description="Update the resource profile, availability windows, and booking status."
+            actions={<button type="button" onClick={() => setIsEditMode(false)} className={buttonClasses("secondary")}>Cancel edit</button>}
+          />
+          {error ? <AlertMessage type="error">{error}</AlertMessage> : null}
+          <Panel>
+            <ResourceForm resource={resource} onSubmit={handleUpdateResource} onCancel={() => setIsEditMode(false)} />
+          </Panel>
+        </div>
+      </FullBleedShell>
     );
   }
 
   return (
-    <section className="card">
-      <div className="resource-header">
-        <button
-          onClick={() => navigate("/admin/resources")}
-          className="ghost-btn"
-          style={{ marginBottom: "1rem" }}
-        >
-          ← Back to Resources
-        </button>
-        <h1>{resource.name}</h1>
-        {resource.archived && (
-          <span
-            style={{
-              display: "inline-block",
-              padding: "0.5rem 1rem",
-              backgroundColor: "#f8f5f0",
-              color: "#856404",
-              border: "1px solid #ffeaa7",
-              borderRadius: "4px",
-              marginTop: "0.5rem",
-            }}
-          >
-            Archived
-          </span>
-        )}
-      </div>
+    <FullBleedShell>
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow="Admin workspace"
+          title={resource.name}
+          description="Review the full resource profile, then make status or lifecycle changes from the actions on the right."
+          actions={
+            <>
+              <Link to="/admin/resources" className={buttonClasses("secondary")}>Back to resources</Link>
+              {!resource.archived ? (
+                <>
+                  <button type="button" onClick={() => setIsEditMode(true)} className={buttonClasses("primary")} disabled={busy}>
+                    Edit resource
+                  </button>
+                  <button type="button" onClick={handleStatusToggle} className={buttonClasses("secondary")} disabled={busy}>
+                    {resource.status === "ACTIVE" ? "Disable" : "Enable"}
+                  </button>
+                  <button type="button" onClick={handleDeleteResource} className={buttonClasses("danger")} disabled={busy}>
+                    Archive
+                  </button>
+                </>
+              ) : (
+                <button type="button" onClick={handleRestoreResource} className={buttonClasses("primary")} disabled={busy}>
+                  Restore
+                </button>
+              )}
+            </>
+          }
+        />
 
-      {error && <p className="alert">{error}</p>}
-      {successMessage && <p className="success">{successMessage}</p>}
+        {error ? <AlertMessage type="error">{error}</AlertMessage> : null}
+        {successMessage ? <AlertMessage type="success">{successMessage}</AlertMessage> : null}
 
-      <div className="resource-info">
-        <div className="info-row">
-          <label>Type:</label>
-          <strong>{resource.type.replace(/_/g, " ")}</strong>
-        </div>
-
-        <div className="info-row">
-          <label>Location:</label>
-          <strong>{resource.location}</strong>
-        </div>
-
-        <div className="info-row">
-          <label>Capacity:</label>
-          <strong>{resource.capacity || "Not specified"}</strong>
-        </div>
-
-        <div className="info-row">
-          <label>Status:</label>
-          <span
-            style={{
-              display: "inline-block",
-              padding: "0.25rem 0.75rem",
-              borderRadius: "4px",
-              backgroundColor:
-                resource.status === "ACTIVE"
-                  ? "#d4edda"
-                  : resource.status === "OUT_OF_SERVICE"
-                    ? "#fff3cd"
-                    : "#f8f9fa",
-              color:
-                resource.status === "ACTIVE"
-                  ? "#155724"
-                  : resource.status === "OUT_OF_SERVICE"
-                    ? "#856404"
-                    : "#495057",
-            }}
-          >
-            <strong>{resource.status.replace(/_/g, " ")}</strong>
-          </span>
-        </div>
-
-        {resource.description && (
-          <div className="info-row">
-            <label>Description:</label>
-            <p style={{ margin: "0.5rem 0 0 0" }}>{resource.description}</p>
+        <Panel className="space-y-6">
+          <div className="flex flex-wrap gap-3">
+            <Badge tone={getBadgeTone("resource", resource.status)}>{formatEnum(resource.status)}</Badge>
+            <Badge tone="border-border bg-muted text-muted-foreground">{formatEnum(resource.type)}</Badge>
+            {resource.archived ? <Badge tone="border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300">Archived</Badge> : null}
           </div>
-        )}
-      </div>
 
-      {resource.availabilityWindows && resource.availabilityWindows.length > 0 && (
-        <div className="availability-section">
-          <h3>Availability Windows</h3>
-          <div className="availability-list">
-            {resource.availabilityWindows.map((window, idx) => (
-              <div key={idx} className="availability-window">
-                <span className="day-label">{window.dayOfWeek}</span>
-                <span className="time-range">
-                  {window.startTime} — {window.endTime}
-                </span>
-              </div>
-            ))}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Location" value={resource.location} />
+            <Field label="Capacity" value={resource.capacity ? String(resource.capacity) : "Not specified"} />
+            <Field label="Created" value={formatDateTime(resource.createdAt)} />
+            <Field label="Updated" value={formatDateTime(resource.updatedAt)} />
           </div>
-        </div>
-      )}
 
-      {resource.createdAt && (
-        <div className="metadata">
-          <span className="muted" style={{ fontSize: "0.85rem" }}>
-            Created: {new Date(resource.createdAt).toLocaleString()}
-          </span>
-          {resource.updatedAt && (
-            <span className="muted" style={{ fontSize: "0.85rem" }}>
-              Updated: {new Date(resource.updatedAt).toLocaleString()}
-            </span>
+          {resource.description ? <Field label="Description" value={resource.description} multiline /> : null}
+        </Panel>
+
+        <Panel className="space-y-6">
+          <SectionHeading
+            title="Availability windows"
+            description="The regular availability schedule that users see when making bookings."
+          />
+
+          {!resource.availabilityWindows || resource.availabilityWindows.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+              No availability windows are configured for this resource.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {resource.availabilityWindows.map((window, index) => (
+                <div key={`${window.dayOfWeek}-${window.startTime}-${index}`} className="rounded-2xl border border-border bg-background p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{formatEnum(window.dayOfWeek)}</p>
+                  <p className="mt-2 text-sm font-semibold text-foreground">
+                    {window.startTime?.slice(0, 5)} – {window.endTime?.slice(0, 5)}
+                  </p>
+                </div>
+              ))}
+            </div>
           )}
-        </div>
-      )}
-
-      <div className="action-buttons">
-        {!resource.archived ? (
-          <>
-            <button
-              onClick={() => setIsEditMode(true)}
-              className="primary-btn"
-              disabled={busy}
-            >
-              {busy ? "..." : "Edit Resource"}
-            </button>
-
-            <button
-              onClick={handleStatusToggle}
-              className="secondary-btn"
-              disabled={busy}
-              title={
-                resource.status === "ACTIVE"
-                  ? "Mark as Out of Service"
-                  : "Mark as Active"
-              }
-            >
-              {resource.status === "ACTIVE" ? "Disable" : "Enable"}
-            </button>
-
-            <button
-              onClick={handleDeleteResource}
-              className="danger-btn"
-              disabled={busy}
-            >
-              Archive
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={handleRestoreResource}
-            className="primary-btn"
-            disabled={busy}
-          >
-            Restore
-          </button>
-        )}
+        </Panel>
       </div>
-
-      <style>{`
-        .resource-header {
-          margin-bottom: 2rem;
-        }
-
-        .resource-header h1 {
-          margin: 0.5rem 0 0 0;
-        }
-
-        .resource-info {
-          margin: 2rem 0;
-          padding: 1.5rem;
-          background-color: #f8f9fa;
-          border-radius: 8px;
-        }
-
-        .info-row {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 1rem;
-          align-items: flex-start;
-        }
-
-        .info-row:last-child {
-          margin-bottom: 0;
-        }
-
-        .info-row label {
-          font-weight: 600;
-          min-width: 120px;
-          color: #495057;
-        }
-
-        .availability-section {
-          margin: 2rem 0;
-          padding-top: 1.5rem;
-          border-top: 1px solid #e0e0e0;
-        }
-
-        .availability-section h3 {
-          margin-top: 0;
-          margin-bottom: 1rem;
-        }
-
-        .availability-list {
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          padding: 1rem;
-          background-color: #f8f9fa;
-        }
-
-        .availability-window {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-          padding: 1rem;
-          margin-bottom: 0.5rem;
-          background-color: white;
-          border-radius: 4px;
-          border-left: 3px solid #0066cc;
-        }
-
-        .availability-window:last-child {
-          margin-bottom: 0;
-        }
-
-        .day-label {
-          font-weight: 600;
-          min-width: 100px;
-          color: #0066cc;
-        }
-
-        .time-range {
-          color: #495057;
-        }
-
-        .metadata {
-          margin: 2rem 0;
-          padding: 1rem;
-          background-color: #f8f9fa;
-          border-radius: 4px;
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .action-buttons {
-          display: flex;
-          gap: 1rem;
-          margin-top: 2rem;
-          flex-wrap: wrap;
-        }
-
-        .danger-btn {
-          background-color: #f8d7da;
-          color: #721c24;
-          border: 1px solid #f5c6cb;
-          padding: 0.75rem 1.5rem;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .danger-btn:hover:not(:disabled) {
-          background-color: #f5c6cb;
-        }
-
-        .danger-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      `}</style>
-    </section>
+    </FullBleedShell>
   );
 }

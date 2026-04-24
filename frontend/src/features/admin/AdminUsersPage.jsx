@@ -1,12 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { approveUser, getPendingUsers, rejectUser } from "../auth/authService";
 import { useAuth } from "../../context/AuthContext";
+import {
+  AlertMessage,
+  Badge,
+  buttonClasses,
+  EmptyState,
+  getBadgeTone,
+  inputClasses,
+  FullBleedShell,
+  PageHeader,
+  Panel,
+  SectionHeading,
+  StatCard,
+  TableShell,
+} from "./AdminUi";
 
 const availableRoles = [
   { value: "USER", label: "User (Student)" },
   { value: "TECHNICIAN", label: "Technician" },
   { value: "MANAGER", label: "Manager" },
-  { value: "ADMIN", label: "Admin" }
+  { value: "ADMIN", label: "Admin" },
+];
+
+const roleDescriptions = [
+  ["User (Student)", "Can access campus facilities, create bookings, and report issues."],
+  ["Technician", "Can handle check-ins, maintenance, and ticket operations."],
+  ["Manager", "Can oversee operations and monitor resource usage workflows."],
+  ["Admin", "Full system access, including approvals and platform-wide management."],
 ];
 
 export default function AdminUsersPage() {
@@ -21,15 +42,16 @@ export default function AdminUsersPage() {
   async function loadPendingUsers() {
     setLoading(true);
     setError("");
-    setSuccessMessage("");
     try {
       const data = await getPendingUsers(auth?.token);
-      setUsers(data);
-      const nextSelected = {};
-      data.forEach((user) => {
-        nextSelected[user.id] = selectedRoles[user.id] || "USER";
+      setUsers(data || []);
+      setSelectedRoles((prev) => {
+        const next = { ...prev };
+        (data || []).forEach((user) => {
+          next[user.id] = prev[user.id] || "USER";
+        });
+        return next;
       });
-      setSelectedRoles(nextSelected);
     } catch (loadError) {
       setError(loadError.message);
     } finally {
@@ -47,10 +69,11 @@ export default function AdminUsersPage() {
     setError("");
     setSuccessMessage("");
     try {
-      const user = users.find(u => u.id === userId);
-      await approveUser(userId, selectedRoles[userId] || "USER", auth?.token);
-      setSuccessMessage(`Approved ${user.email} with role ${selectedRoles[userId] || "USER"}`);
-      setTimeout(() => loadPendingUsers(), 800);
+      const user = users.find((entry) => entry.id === userId);
+      const nextRole = selectedRoles[userId] || "USER";
+      await approveUser(userId, nextRole, auth?.token);
+      setSuccessMessage(`Approved ${user?.email} with role ${nextRole}.`);
+      setTimeout(() => loadPendingUsers(), 500);
     } catch (actionError) {
       setError(actionError.message);
     } finally {
@@ -63,10 +86,10 @@ export default function AdminUsersPage() {
     setError("");
     setSuccessMessage("");
     try {
-      const user = users.find(u => u.id === userId);
+      const user = users.find((entry) => entry.id === userId);
       await rejectUser(userId, auth?.token);
-      setSuccessMessage(`Rejected account for ${user.email}`);
-      setTimeout(() => loadPendingUsers(), 800);
+      setSuccessMessage(`Rejected account for ${user?.email}.`);
+      setTimeout(() => loadPendingUsers(), 500);
     } catch (actionError) {
       setError(actionError.message);
     } finally {
@@ -74,102 +97,138 @@ export default function AdminUsersPage() {
     }
   }
 
+  const providerSummary = useMemo(() => {
+    return users.reduce(
+      (accumulator, user) => {
+        const key = user.provider || "LOCAL";
+        accumulator[key] = (accumulator[key] || 0) + 1;
+        return accumulator;
+      },
+      { GOOGLE: 0, LOCAL: 0 }
+    );
+  }, [users]);
+
   return (
-    <section className="card">
-      <h1>Pending User Approvals</h1>
-      <p className="muted">Review pending accounts and assign role-based access permissions.</p>
+    <FullBleedShell>
+      {/* px-14 py-18 sm:px-18 lg:px-22 */}
+      <div className="space-y-6">
+        <PageHeader
+          // eyebrow="Admin workspace"
+          title="Pending user approvals"
+          description="Review new accounts, assign the correct role on first approval, and keep onboarding clear and consistent."
+        />
 
-      {error && <p className="alert">{error}</p>}
-      {successMessage && <p className="success">{successMessage}</p>}
-
-      {loading && <p className="muted">Loading pending users...</p>}
-
-      {!loading && users.length === 0 && (
-        <p className="success">✓ No pending users. All accounts have been reviewed.</p>
-      )}
-
-      {!loading && users.length > 0 && (
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Email</th>
-                <th>Provider</th>
-                <th>Status</th>
-                <th>Assign Role</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.email}</td>
-                  <td>
-                    <span 
-                      style={{
-                        padding: "0.25rem 0.5rem",
-                        borderRadius: "4px",
-                        backgroundColor: user.provider === "GOOGLE" ? "#f0f7ff" : "#f8f8f8",
-                        fontSize: "0.85rem",
-                        color: "#2c2c2c"
-                      }}
-                    >
-                      {user.provider}
-                    </span>
-                  </td>
-                  <td>{user.approvalStatus}</td>
-                  <td>
-                    <select
-                      value={selectedRoles[user.id] || "USER"}
-                      onChange={(event) =>
-                        setSelectedRoles((prev) => ({
-                          ...prev,
-                          [user.id]: event.target.value,
-                        }))
-                      }
-                      style={{ padding: "0.5rem", borderRadius: "4px", color: "#2c2c2c", backgroundColor: "#fff", border: "1px solid #ccc" }}
-                    >
-                      {availableRoles.map((role) => (
-                        <option key={role.value} value={role.value} style={{ color: "#2c2c2c" }}>
-                          {role.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="actions-cell">
-                    <button
-                      type="button"
-                      className="primary-btn"
-                      disabled={busyUserId === user.id}
-                      onClick={() => handleApprove(user.id)}
-                    >
-                      {busyUserId === user.id ? "..." : "Approve"}
-                    </button>
-                    <button
-                      type="button"
-                      className="ghost-btn"
-                      disabled={busyUserId === user.id}
-                      onClick={() => handleReject(user.id)}
-                    >
-                      {busyUserId === user.id ? "..." : "Reject"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard label="Pending accounts" value={String(users.length).padStart(2, "0")} helper="Awaiting review" icon="👥" />
+          <StatCard label="Google sign-ins" value={String(providerSummary.GOOGLE || 0).padStart(2, "0")} helper="OAuth users" icon="🟦" />
+          <StatCard label="Credential sign-ins" value={String(providerSummary.LOCAL || 0).padStart(2, "0")} helper="Email & password" icon="🔐" />
         </div>
-      )}
 
-      <div style={{ marginTop: "1.5rem", padding: "1rem", backgroundColor: "#f9f9f9", borderRadius: "8px", color: "#2c2c2c" }}>
-        <h3 style={{ marginTop: 0, color: "#1a1a1a" }}>Role Descriptions</h3>
-        <ul style={{ fontSize: "0.9rem", lineHeight: "1.8", color: "#2c2c2c" }}>
-          <li><strong style={{ color: "#1a1a1a" }}>User (Student):</strong> Can access campus facilities, view schedules, and report issues</li>
-          <li><strong style={{ color: "#1a1a1a" }}>Technician:</strong> Can manage infrastructure, handle maintenance requests, monitor systems</li>
-          <li><strong style={{ color: "#1a1a1a" }}>Manager:</strong> Can oversee operations, view analytics, manage resource allocation</li>
-          <li><strong style={{ color: "#1a1a1a" }}>Admin:</strong> Full system access, can approve users and manage all permissions</li>
-        </ul>
+        {error ? <AlertMessage type="error">{error}</AlertMessage> : null}
+        {successMessage ? <AlertMessage type="success">{successMessage}</AlertMessage> : null}
+
+        <Panel className="space-y-6">
+          <SectionHeading
+            title="Approval queue"
+            description="Assign a role before approving so new users land in the right workspace immediately."
+          />
+
+          {loading ? (
+            <div className="rounded-2xl border border-border bg-background px-4 py-10 text-center text-sm text-muted-foreground">
+              Loading pending users...
+            </div>
+          ) : users.length === 0 ? (
+            <EmptyState
+              title="No pending users"
+              description="All accounts have been reviewed. New requests will appear here automatically."
+            />
+          ) : (
+            <TableShell>
+              <table className="min-w-full divide-y divide-border text-sm">
+                <thead className="bg-muted/50 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">Account</th>
+                    <th className="px-4 py-3">Provider</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Assign role</th>
+                    <th className="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {users.map((user) => {
+                    const isBusy = busyUserId === user.id;
+                    return (
+                      <tr key={user.id} className="align-top">
+                        <td className="px-4 py-4">
+                          <div className="font-medium text-foreground">{user.email}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">ID: {user.id?.slice(0, 8)}...</div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <Badge tone={getBadgeTone("provider", user.provider || "LOCAL")}>{user.provider || "LOCAL"}</Badge>
+                        </td>
+                        <td className="px-4 py-4 text-foreground">{user.approvalStatus}</td>
+                        <td className="px-4 py-4">
+                          <select
+                            value={selectedRoles[user.id] || "USER"}
+                            onChange={(event) =>
+                              setSelectedRoles((prev) => ({
+                                ...prev,
+                                [user.id]: event.target.value,
+                              }))
+                            }
+                            className={inputClasses()}
+                          >
+                            {availableRoles.map((role) => (
+                              <option key={role.value} value={role.value}>
+                                {role.label}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className={buttonClasses("primary")}
+                              disabled={isBusy}
+                              onClick={() => handleApprove(user.id)}
+                            >
+                              {isBusy ? "Working..." : "Approve"}
+                            </button>
+                            <button
+                              type="button"
+                              className={buttonClasses("danger")}
+                              disabled={isBusy}
+                              onClick={() => handleReject(user.id)}
+                            >
+                              {isBusy ? "Working..." : "Reject"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </TableShell>
+          )}
+        </Panel>
+
+        <Panel>
+          <SectionHeading
+            title="Role guide"
+            description="Keep approvals consistent by using the same rule of thumb for similar user requests."
+          />
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {roleDescriptions.map(([title, description]) => (
+              <div key={title} className="rounded-2xl border border-border bg-background p-4">
+                <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+              </div>
+            ))}
+          </div>
+        </Panel>
       </div>
-    </section>
+    </FullBleedShell>
   );
 }

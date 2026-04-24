@@ -1,163 +1,268 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import notificationService from './notificationService';
+import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import notificationService from "./notificationService";
 
-const NotificationPanel = () => {
+const TYPE_META = {
+  BOOKING: {
+    icon: "📅",
+    label: "Booking",
+    badge:
+      "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20",
+  },
+  TICKET: {
+    icon: "🎫",
+    label: "Ticket",
+    badge:
+      "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20",
+  },
+  COMMENT: {
+    icon: "💬",
+    label: "Comment",
+    badge:
+      "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
+  },
+  DEFAULT: {
+    icon: "🔔",
+    label: "Notification",
+    badge:
+      "bg-muted text-muted-foreground border-border",
+  },
+};
+
+function formatTime(timestamp) {
+  const diffMs = Date.now() - new Date(timestamp).getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return new Date(timestamp).toLocaleDateString();
+}
+
+export default function NotificationPanel() {
   const { auth } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+
+  async function fetchNotifications() {
+    if (!auth?.token) return;
+
+    setLoading(true);
+    try {
+      const data = await notificationService.getNotifications(auth.token);
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch {
+      // ignore for now
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     fetchNotifications();
+
+    if (!auth?.token) return;
+
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [auth?.token]);
 
-  const fetchNotifications = async () => {
-    if (!auth?.token) return;
-    setLoading(true);
-    try {
-      const data = await notificationService.getNotifications(auth.token);
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.read).length);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  };
+  const unreadCount = useMemo(
+    () => notifications.filter((item) => !item.read).length,
+    [notifications]
+  );
 
-  const handleMarkAsRead = async (notificationId, isRead) => {
-    if (isRead) return;
+  async function handleMarkAsRead(notificationId, isRead) {
+    if (isRead || !auth?.token) return;
+
     try {
       await notificationService.markAsRead(notificationId, auth.token);
-      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
-      setUnreadCount(c => Math.max(0, c - 1));
-    } catch {}
-  };
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item.id === notificationId ? { ...item, read: true } : item
+        )
+      );
+    } catch {
+      // ignore
+    }
+  }
 
-  const handleMarkAllAsRead = async () => {
+  async function handleMarkAllAsRead() {
+    if (!auth?.token || unreadCount === 0) return;
+
     try {
       await notificationService.markAllAsRead(auth.token);
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setUnreadCount(0);
-    } catch {}
-  };
+      setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+    } catch {
+      // ignore
+    }
+  }
 
-  const handleDelete = async (notificationId) => {
+  async function handleDelete(notificationId) {
+    if (!auth?.token) return;
+
     try {
       await notificationService.deleteNotification(notificationId, auth.token);
-      const deleted = notifications.find(n => n.id === notificationId);
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      if (deleted && !deleted.read) setUnreadCount(c => Math.max(0, c - 1));
-    } catch {}
-  };
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'BOOKING': return '📅';
-      case 'TICKET':  return '🎫';
-      case 'COMMENT': return '💬';
-      default:        return '🔔';
+      setNotifications((prev) =>
+        prev.filter((item) => item.id !== notificationId)
+      );
+    } catch {
+      // ignore
     }
-  };
-
-  const formatTime = (timestamp) => {
-    const diffMs   = Date.now() - new Date(timestamp);
-    const diffMins  = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays  = Math.floor(diffMs / 86400000);
-    if (diffMins  < 1)  return 'Just now';
-    if (diffMins  < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays  < 7)  return `${diffDays}d ago`;
-    return new Date(timestamp).toLocaleDateString();
-  };
+  }
 
   return (
-    <div className="absolute top-[50px] right-0 z-[1000] w-[360px] max-w-[90vw] max-h-[600px] flex flex-col bg-white rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.1)] overflow-hidden border border-[#e0e0e0]">
-      {/* Header */}
-      <div className="flex justify-between items-center px-4 py-3 border-b border-[#e0e0e0]">
-        <h3 className="m-0 text-[18px] font-semibold flex items-center gap-2" style={{ color: '#333' }}>
-          Notifications
-          {unreadCount > 0 && (
-            <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-              {unreadCount}
-            </span>
-          )}
-        </h3>
-        {unreadCount > 0 && (
+    <div className="absolute right-0 top-12 z-[1000] w-[380px] max-w-[92vw] overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-2xl">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
+          <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+            {unreadCount}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
           <button
-            className="bg-transparent border-none text-[#0066cc] cursor-pointer text-xs underline px-2 py-1 hover:text-[#0052a3]"
-            onClick={handleMarkAllAsRead}
+            type="button"
+            onClick={fetchNotifications}
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-accent hover:text-accent-foreground"
           >
-            Mark all as read
+            Refresh
           </button>
-        )}
+
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllAsRead}
+              className="inline-flex h-8 items-center justify-center rounded-lg px-2.5 text-xs font-medium text-primary transition hover:bg-primary/10"
+            >
+              Mark all read
+            </button>
+          )}
+        </div>
       </div>
 
       {loading && (
-        <div className="px-5 py-5 text-center" style={{ color: '#666' }}>Loading notifications…</div>
-      )}
-
-      {!loading && notifications.length === 0 && (
-        <div className="flex-1 flex items-center justify-center px-5 py-10" style={{ color: '#666' }}>
-          <p>No notifications yet</p>
+        <div className="space-y-3 px-4 py-4">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="rounded-xl border border-border bg-card p-3"
+            >
+              <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+              <div className="mt-2 h-3 w-full animate-pulse rounded bg-muted" />
+              <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-muted" />
+            </div>
+          ))}
         </div>
       )}
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto max-h-[480px]">
-        {notifications.map(n => (
-          <div
-            key={n.id}
-            className={`px-4 py-3 border-b border-[#f0f0f0] transition-colors cursor-default ${n.read ? 'bg-white hover:bg-[#f9f9f9]' : 'bg-[#f0f8ff] hover:bg-[#e8f4ff]'}`}
-          >
-            <div className="flex gap-3 justify-between">
-              <div className="flex gap-[10px] flex-1">
-                <span className="text-xl flex-shrink-0">{getTypeIcon(n.type)}</span>
-                <div className="flex-1">
-                  <h4 className="m-0 mb-1 text-sm font-semibold text-[#333]">{n.title}</h4>
-                  <p className="m-0 mb-1 text-[13px] text-[#666] leading-snug">{n.message}</p>
-                  {n.relatedResourceName && (
-                    <small className="block text-[11px] text-[#888] mb-1">
-                      Resource: {n.relatedResourceName}
-                    </small>
-                  )}
-                  <small className="text-[11px] text-[#aaa]">{formatTime(n.createdAt)}</small>
+      {!loading && notifications.length === 0 && (
+        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-2xl">
+            🔕
+          </div>
+          <p className="mt-4 text-sm font-medium text-foreground">
+            No notifications yet
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Booking, ticket, and comment updates will show up here.
+          </p>
+        </div>
+      )}
+
+      {!loading && notifications.length > 0 && (
+        <div className="max-h-[460px] overflow-y-auto">
+          {notifications.map((item) => {
+            const meta = TYPE_META[item.type] || TYPE_META.DEFAULT;
+
+            return (
+              <div
+                key={item.id}
+                className={[
+                  "border-b border-border p-4 transition-colors",
+                  item.read
+                    ? "bg-popover hover:bg-accent/40"
+                    : "bg-primary/5 hover:bg-primary/10",
+                ].join(" ")}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-lg">
+                    {meta.icon}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-sm font-semibold text-foreground">
+                        {item.title}
+                      </h4>
+
+                      {!item.read && (
+                        <span className="inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                          New
+                        </span>
+                      )}
+
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${meta.badge}`}
+                      >
+                        {meta.label}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {item.message}
+                    </p>
+
+                    {item.relatedResourceName && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Resource:{" "}
+                        <span className="font-medium text-foreground">
+                          {item.relatedResourceName}
+                        </span>
+                      </p>
+                    )}
+
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {formatTime(item.createdAt)}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-1">
+                    {!item.read && (
+                      <button
+                        type="button"
+                        onClick={() => handleMarkAsRead(item.id, item.read)}
+                        title="Mark as read"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm text-primary transition hover:bg-primary/10"
+                      >
+                        ✓
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item.id)}
+                      title="Delete notification"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-1 flex-shrink-0">
-                {!n.read && (
-                  <button
-                    className="bg-transparent border-none w-6 h-6 flex items-center justify-center cursor-pointer rounded text-xs text-[#0066cc] hover:bg-[#e6f2ff] transition-colors"
-                    onClick={() => handleMarkAsRead(n.id, n.read)}
-                    title="Mark as read"
-                  >
-                    ✓
-                  </button>
-                )}
-                <button
-                  className="bg-transparent border-none w-6 h-6 flex items-center justify-center cursor-pointer rounded text-xs hover:bg-[#f5f5f5] hover:text-red-500 transition-colors"
-                  style={{ color: '#999' }}
-                  onClick={() => handleDelete(n.id)}
-                  title="Delete"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Footer */}
-      <div className="px-4 py-2 border-t border-[#e0e0e0] text-center text-[11px] bg-[#fafafa]" style={{ color: '#555' }}>
-        Notifications are checked every 30 seconds
+      <div className="border-t border-border bg-muted/40 px-4 py-2 text-center text-[11px] text-muted-foreground">
+        Notifications refresh every 30 seconds
       </div>
     </div>
   );
-};
-
-export default NotificationPanel;
+}

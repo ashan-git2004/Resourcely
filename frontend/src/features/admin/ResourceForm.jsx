@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { buttonClasses, inputClasses, selectClasses, textareaClasses } from "./AdminUi";
 
 const DAYS_OF_WEEK = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 
@@ -15,6 +16,19 @@ const RESOURCE_TYPES = [
   "SPORTS_FACILITY",
 ];
 
+function Field({ label, required = false, error, children, hint }) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-foreground">
+        {label} {required ? <span className="text-rose-500">*</span> : null}
+      </label>
+      {children}
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      {error ? <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p> : null}
+    </div>
+  );
+}
+
 export default function ResourceForm({ resource = null, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: "",
@@ -25,7 +39,6 @@ export default function ResourceForm({ resource = null, onSubmit, onCancel }) {
     status: "ACTIVE",
     availabilityWindows: [],
   });
-
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -43,40 +56,31 @@ export default function ResourceForm({ resource = null, onSubmit, onCancel }) {
   }, [resource]);
 
   function validateForm() {
-    const newErrors = {};
+    const nextErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
+    if (!formData.name.trim()) nextErrors.name = "Name is required.";
+    if (!formData.type) nextErrors.type = "Type is required.";
+    if (!formData.location.trim()) nextErrors.location = "Location is required.";
+
+    if (formData.capacity && (Number.isNaN(Number(formData.capacity)) || Number(formData.capacity) < 1)) {
+      nextErrors.capacity = "Capacity must be greater than 0.";
     }
 
-    if (!formData.type) {
-      newErrors.type = "Type is required";
-    }
+    formData.availabilityWindows.forEach((window, index) => {
+      if (window.startTime >= window.endTime) {
+        nextErrors[`availability-${index}`] = "End time must be later than start time.";
+      }
+    });
 
-    if (!formData.location.trim()) {
-      newErrors.location = "Location is required";
-    }
-
-    if (formData.capacity && (isNaN(formData.capacity) || parseInt(formData.capacity) < 1)) {
-      newErrors.capacity = "Capacity must be a number greater than 0";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   }
 
-  function handleInputChange(e) {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear error for this field
+  function handleInputChange(event) {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   }
 
@@ -85,11 +89,7 @@ export default function ResourceForm({ resource = null, onSubmit, onCancel }) {
       ...prev,
       availabilityWindows: [
         ...prev.availabilityWindows,
-        {
-          dayOfWeek: "MONDAY",
-          startTime: "09:00:00",
-          endTime: "17:00:00",
-        },
+        { dayOfWeek: "MONDAY", startTime: "09:00:00", endTime: "17:00:00" },
       ],
     }));
   }
@@ -97,25 +97,22 @@ export default function ResourceForm({ resource = null, onSubmit, onCancel }) {
   function handleRemoveAvailabilityWindow(index) {
     setFormData((prev) => ({
       ...prev,
-      availabilityWindows: prev.availabilityWindows.filter((_, i) => i !== index),
+      availabilityWindows: prev.availabilityWindows.filter((_, itemIndex) => itemIndex !== index),
     }));
   }
 
   function handleAvailabilityWindowChange(index, field, value) {
     setFormData((prev) => ({
       ...prev,
-      availabilityWindows: prev.availabilityWindows.map((window, i) =>
-        i === index ? { ...window, [field]: value } : window
+      availabilityWindows: prev.availabilityWindows.map((window, itemIndex) =>
+        itemIndex === index ? { ...window, [field]: value } : window
       ),
     }));
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+  function handleSubmit(event) {
+    event.preventDefault();
+    if (!validateForm()) return;
 
     const payload = {
       name: formData.name.trim(),
@@ -123,127 +120,115 @@ export default function ResourceForm({ resource = null, onSubmit, onCancel }) {
       type: formData.type,
       location: formData.location.trim(),
       status: formData.status,
-      availabilityWindows:
-        formData.availabilityWindows.length > 0 ? formData.availabilityWindows : null,
+      availabilityWindows: formData.availabilityWindows.length ? formData.availabilityWindows : null,
     };
 
     if (formData.capacity) {
-      payload.capacity = parseInt(formData.capacity);
+      payload.capacity = parseInt(formData.capacity, 10);
     }
 
     onSubmit(payload);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form">
-      <div className="form-group">
-        <label htmlFor="name">Resource Name *</label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-          placeholder="e.g., Lecture Hall A101"
-          className="form-input"
-        />
-        {errors.name && <span className="error">{errors.name}</span>}
+    <form onSubmit={handleSubmit} className="space-y-8 ">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Field label="Resource name" required error={errors.name}>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            placeholder="Lecture Hall A101"
+            className={inputClasses()}
+          />
+        </Field>
+
+        <Field label="Location" required error={errors.location}>
+          <input
+            type="text"
+            id="location"
+            name="location"
+            value={formData.location}
+            onChange={handleInputChange}
+            placeholder="Building A, Floor 1"
+            className={inputClasses()}
+          />
+        </Field>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="description">Description</label>
+      <Field label="Description" hint="Optional context for admins and users browsing this resource.">
         <textarea
           id="description"
           name="description"
           value={formData.description}
           onChange={handleInputChange}
-          placeholder="e.g., Main lecture hall with 150 seats"
-          className="form-input"
-          rows="3"
+          placeholder="Main lecture hall with projector, fixed seating, and audio support"
+          className={textareaClasses()}
+          rows={4}
         />
-      </div>
+      </Field>
 
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="type">Resource Type *</label>
-          <select
-            id="type"
-            name="type"
-            value={formData.type}
-            onChange={handleInputChange}
-            className="form-input"
-          >
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Field label="Resource type" required error={errors.type}>
+          <select id="type" name="type" value={formData.type} onChange={handleInputChange} className={selectClasses()}>
             {RESOURCE_TYPES.map((resourceType) => (
               <option key={resourceType} value={resourceType}>
                 {resourceType.replace(/_/g, " ")}
               </option>
             ))}
           </select>
-          {errors.type && <span className="error">{errors.type}</span>}
-        </div>
+        </Field>
 
-        <div className="form-group">
-          <label htmlFor="capacity">Capacity (Optional)</label>
+        <Field label="Capacity" error={errors.capacity} hint="Leave blank if capacity does not apply.">
           <input
             type="number"
             id="capacity"
             name="capacity"
             value={formData.capacity}
             onChange={handleInputChange}
-            placeholder="e.g., 150"
+            placeholder="150"
             min="1"
-            className="form-input"
+            className={inputClasses()}
           />
-          {errors.capacity && <span className="error">{errors.capacity}</span>}
+        </Field>
+
+        <Field label="Status">
+          <select id="status" name="status" value={formData.status} onChange={handleInputChange} className={selectClasses()}>
+            <option value="ACTIVE">Active</option>
+            <option value="OUT_OF_SERVICE">Out of Service</option>
+          </select>
+        </Field>
+      </div>
+
+      <div className="rounded-3xl border border-border bg-background p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">Availability windows</h3>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Define the regular times this resource should be available for booking.
+            </p>
+          </div>
+          <button type="button" onClick={handleAddAvailabilityWindow} className={buttonClasses("secondary")}>
+            + Add window
+          </button>
         </div>
-      </div>
 
-      <div className="form-group">
-        <label htmlFor="location">Location *</label>
-        <input
-          type="text"
-          id="location"
-          name="location"
-          value={formData.location}
-          onChange={handleInputChange}
-          placeholder="e.g., Building A, Floor 1"
-          className="form-input"
-        />
-        {errors.location && <span className="error">{errors.location}</span>}
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="status">Status</label>
-        <select
-          id="status"
-          name="status"
-          value={formData.status}
-          onChange={handleInputChange}
-          className="form-input"
-        >
-          <option value="ACTIVE">Active</option>
-          <option value="OUT_OF_SERVICE">Out of Service</option>
-        </select>
-      </div>
-
-      {/* Availability Windows */}
-      <div className="form-section">
-        <h3>Availability Windows</h3>
-        <p className="muted">Define when this resource is available for booking</p>
-
-        {formData.availabilityWindows.length > 0 && (
-          <div className="availability-list">
+        {formData.availabilityWindows.length === 0 ? (
+          <div className="mt-6 rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+            No availability windows added yet.
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
             {formData.availabilityWindows.map((window, index) => (
-              <div key={index} className="availability-window">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Day of Week</label>
+              <div key={`${window.dayOfWeek}-${index}`} className="rounded-2xl border border-border bg-card p-4">
+                <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto]">
+                  <Field label="Day">
                     <select
                       value={window.dayOfWeek}
-                      onChange={(e) =>
-                        handleAvailabilityWindowChange(index, "dayOfWeek", e.target.value)
-                      }
-                      className="form-input"
+                      onChange={(event) => handleAvailabilityWindowChange(index, "dayOfWeek", event.target.value)}
+                      className={selectClasses()}
                     >
                       {DAYS_OF_WEEK.map((day) => (
                         <option key={day} value={day}>
@@ -251,62 +236,52 @@ export default function ResourceForm({ resource = null, onSubmit, onCancel }) {
                         </option>
                       ))}
                     </select>
-                  </div>
+                  </Field>
 
-                  <div className="form-group">
-                    <label>Start Time</label>
+                  <Field label="Start time">
                     <input
                       type="time"
-                      value={window.startTime.substring(0, 5)}
-                      onChange={(e) =>
-                        handleAvailabilityWindowChange(index, "startTime", e.target.value + ":00")
+                      value={window.startTime.slice(0, 5)}
+                      onChange={(event) =>
+                        handleAvailabilityWindowChange(index, "startTime", `${event.target.value}:00`)
                       }
-                      className="form-input"
+                      className={inputClasses()}
                     />
-                  </div>
+                  </Field>
 
-                  <div className="form-group">
-                    <label>End Time</label>
+                  <Field label="End time" error={errors[`availability-${index}`]}>
                     <input
                       type="time"
-                      value={window.endTime.substring(0, 5)}
-                      onChange={(e) =>
-                        handleAvailabilityWindowChange(index, "endTime", e.target.value + ":00")
+                      value={window.endTime.slice(0, 5)}
+                      onChange={(event) =>
+                        handleAvailabilityWindowChange(index, "endTime", `${event.target.value}:00`)
                       }
-                      className="form-input"
+                      className={inputClasses()}
                     />
-                  </div>
+                  </Field>
 
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveAvailabilityWindow(index)}
-                    className="ghost-btn"
-                    style={{ alignSelf: "flex-end" }}
-                  >
-                    Remove
-                  </button>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAvailabilityWindow(index)}
+                      className={buttonClasses("ghost")}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
-
-        <button
-          type="button"
-          onClick={handleAddAvailabilityWindow}
-          className="secondary-btn"
-        >
-          + Add Availability Window
-        </button>
       </div>
 
-      {/* Form Actions */}
-      <div className="form-actions">
-        <button type="submit" className="primary-btn">
-          {resource ? "Update Resource" : "Create Resource"}
-        </button>
-        <button type="button" onClick={onCancel} className="ghost-btn">
+      <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
+        <button type="button" onClick={onCancel} className={buttonClasses("secondary")}>
           Cancel
+        </button>
+        <button type="submit" className={buttonClasses("primary")}>
+          {resource ? "Update resource" : "Create resource"}
         </button>
       </div>
     </form>

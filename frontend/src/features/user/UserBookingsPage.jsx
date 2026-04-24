@@ -1,68 +1,152 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
+  cancelBooking,
   createBooking,
+  deleteBooking,
   getUserBookings,
   updateBooking,
-  deleteBooking,
-  cancelBooking,
 } from "./bookingService";
+import {
+  Alert,
+  Badge,
+  buttonStyles,
+  DataTable,
+  EmptyState,
+  fieldClass,
+  FullBleedShell,
+  InfoList,
+  Modal,
+  PageHeader,
+  SectionCard,
+  StatGrid,
+  textAreaClass,
+  cx,
+} from "./UserUi";
+
+import { getSelectableResources, getResourceById } from "./resourceLookupService";
 
 const BOOKING_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"];
 
 const RESOURCE_TYPES = [
-  "LECTURE_HALL", "LAB", "MEETING_ROOM", "EQUIPMENT",
-  "LIBRARY", "COMPUTER_LAB", "AUDITORIUM", "SEMINAR_ROOM",
-  "PARKING", "SPORTS_FACILITY",
+  "LECTURE_HALL",
+  "LAB",
+  "MEETING_ROOM",
+  "EQUIPMENT",
+  "LIBRARY",
+  "COMPUTER_LAB",
+  "AUDITORIUM",
+  "SEMINAR_ROOM",
+  "PARKING",
+  "SPORTS_FACILITY",
 ];
 
-function statusColor(status) {
+const emptyCreateForm = {
+  resourceId: "",
+  startTime: "",
+  endTime: "",
+  purpose: "",
+  expectedAttendees: "",
+};
+
+function formatDateTime(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString();
+}
+
+function toDateTimeLocalValue(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function normalizeDateTime(value) {
+  return value ? new Date(value).toISOString() : "";
+}
+
+function bookingTone(status) {
   switch (status) {
-    case "PENDING": return { bg: "#fef9c3", color: "#854d0e" };
-    case "APPROVED": return { bg: "#d1fae5", color: "#065f46" };
-    case "REJECTED": return { bg: "#fee2e2", color: "#991b1b" };
-    case "CANCELLED": return { bg: "#e5e7eb", color: "#374151" };
-    default: return { bg: "#f3f4f6", color: "#374151" };
+    case "PENDING":
+      return "pending";
+    case "APPROVED":
+      return "approved";
+    case "REJECTED":
+      return "rejected";
+    case "CANCELLED":
+      return "cancelled";
+    default:
+      return "neutral";
   }
 }
 
-function formatDate(iso) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
+function canEdit(status) {
+  return status === "PENDING";
+}
+
+function canViewQr(status) {
+  return status === "APPROVED";
+}
+
+function buildEditState(booking) {
+  return {
+    bookingId: booking.id,
+    purpose: booking.purpose || "",
+    startTime: toDateTimeLocalValue(booking.startTime),
+    endTime: toDateTimeLocalValue(booking.endTime),
+    expectedAttendees: booking.expectedAttendees ?? "",
+  };
 }
 
 export default function UserBookingsPage() {
   const { auth } = useAuth();
   const navigate = useNavigate();
+
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [busyId, setBusyId] = useState("");
 
-  // Filters
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterType, setFilterType] = useState("ALL");
   const [filterLocation, setFilterLocation] = useState("");
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
 
-  // Create booking modal
-  const [createModal, setCreateModal] = useState(null); // { resourceId, startTime, endTime, purpose, expectedAttendees }
-
-  // Edit booking modal
-  const [editModal, setEditModal] = useState(null); // { bookingId, purpose, startTime, endTime, expectedAttendees }
-
-  // Detail panel
+  const [createModal, setCreateModal] = useState(null);
+  const [editModal, setEditModal] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
-  // Server-side: filters by resourceType/location (requires DB join).
-  // Status and date range are applied client-side after fetch for instant, reliable filtering.
-  async function loadBookings() {
+  const [resources, setResources] = useState([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [resourceLoadError, setResourceLoadError] = useState("");
+
+  const [resourceNameMap, setResourceNameMap] = useState({});
+
+  const loadResources = useCallback(async () => {
+    if (!auth?.token) return;
+
+    setResourcesLoading(true);
+    setResourceLoadError("");
+
+    try {
+      const data = await getSelectableResources(auth.token);
+      setResources(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setResourceLoadError(err.message || "Failed to load resources.");
+    } finally {
+      setResourcesLoading(false);
+    }
+  }, [auth?.token]);
+
+  useEffect(() => {
+    loadResources();
+  }, [loadResources]);
+
+  const loadBookings = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -73,63 +157,131 @@ export default function UserBookingsPage() {
       const data = await getUserBookings(filters, auth?.token);
       setBookings(data || []);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to load bookings.");
     } finally {
       setLoading(false);
     }
-  }
+  }, [auth?.token, filterLocation, filterType]);
 
   useEffect(() => {
     loadBookings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterType]);
+  }, [loadBookings]);
 
-  // Client-side filtering for status and date range — instant, no round-trip needed.
-  // Dates are compared using the LOCAL date string (YYYY-MM-DD) to avoid UTC offset issues
-  // (a booking at 3 AM local time may be stored as the previous day in UTC).
   const displayBookings = useMemo(() => {
-    let result = bookings;
+    let result = [...bookings];
+
     if (filterStatus !== "ALL") {
-      result = result.filter((b) => b.status === filterStatus);
+      result = result.filter((booking) => booking.status === filterStatus);
     }
+
     if (filterStartDate) {
-      result = result.filter((b) => {
-        const localDate = new Date(b.startTime).toLocaleDateString("sv"); // "sv" locale → YYYY-MM-DD
+      result = result.filter((booking) => {
+        const localDate = new Date(booking.startTime).toLocaleDateString("sv");
         return localDate >= filterStartDate;
       });
     }
+
     if (filterEndDate) {
-      result = result.filter((b) => {
-        const localDate = new Date(b.startTime).toLocaleDateString("sv");
+      result = result.filter((booking) => {
+        const localDate = new Date(booking.startTime).toLocaleDateString("sv");
         return localDate <= filterEndDate;
       });
     }
-    return result;
-  }, [bookings, filterStatus, filterStartDate, filterEndDate]);
 
-  function showSuccess(msg) {
-    setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(""), 4000);
+    return result.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+  }, [bookings, filterEndDate, filterStartDate, filterStatus]);
+
+  const stats = useMemo(() => {
+    const pending = bookings.filter((booking) => booking.status === "PENDING").length;
+    const approved = bookings.filter((booking) => booking.status === "APPROVED").length;
+    const cancelled = bookings.filter((booking) => booking.status === "CANCELLED").length;
+
+    return [
+      { label: "Total bookings", value: bookings.length, helper: "All requests", icon: "📚" },
+      { label: "Pending", value: pending, helper: "Awaiting approval", icon: "⏳" },
+      { label: "Approved", value: approved, helper: "QR available", icon: "✅" },
+      { label: "Cancelled", value: cancelled, helper: "Closed requests", icon: "🧾" },
+    ];
+  }, [bookings]);
+
+  const missingResourceIds = useMemo(() => {
+    const uniqueIds = [...new Set(bookings.map((booking) => booking.resourceId).filter(Boolean))];
+
+    return uniqueIds.filter((id) => !resourceNameMap[id]);
+  }, [bookings, resourceNameMap]);
+
+  useEffect(() => {
+    if (!auth?.token || missingResourceIds.length === 0) return;
+
+    let cancelled = false;
+
+    async function loadResourceNames() {
+      const results = await Promise.all(
+        missingResourceIds.map(async (id) => {
+          try {
+            const resource = await getResourceById(id, auth.token);
+            return [id, resource?.name || `Resource #${id}`];
+          } catch {
+            return [id, `Resource #${id}`];
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      setResourceNameMap((prev) => {
+        const next = { ...prev };
+        for (const [id, name] of results) {
+          next[id] = name;
+        }
+        return next;
+      });
+    }
+
+    loadResourceNames();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth?.token, missingResourceIds]);
+
+  function getResolvedResourceName(booking) {
+    return (
+      resourceNameMap[booking.resourceId] ||
+      booking.resourceName ||
+      `Resource #${booking.resourceId}`
+    );
+  }
+
+  function showSuccess(message) {
+    setSuccessMessage(message);
+    window.clearTimeout(showSuccess.timeoutId);
+    showSuccess.timeoutId = window.setTimeout(() => setSuccessMessage(""), 4000);
   }
 
   async function handleCreateBooking() {
     if (!createModal) return;
     setBusyId("create");
     setError("");
+
     try {
-      const payload = {
-        resourceId: createModal.resourceId,
-        startTime: createModal.startTime,
-        endTime: createModal.endTime,
-        purpose: createModal.purpose,
-        expectedAttendees: createModal.expectedAttendees || null,
-      };
-      await createBooking(payload, auth?.token);
-      showSuccess("✓ Booking request created successfully");
+      await createBooking(
+        {
+          resourceId: createModal.resourceId.trim(),
+          // resourceId: Number(createModal.resourceId),
+          startTime: normalizeDateTime(createModal.startTime),
+          endTime: normalizeDateTime(createModal.endTime),
+          purpose: createModal.purpose.trim(),
+          expectedAttendees: createModal.expectedAttendees ? Number(createModal.expectedAttendees) : null,
+        },
+        auth?.token
+      );
+
+      showSuccess("Booking request created successfully.");
       setCreateModal(null);
-      setTimeout(() => loadBookings(), 600);
+      await loadBookings();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to create booking.");
     } finally {
       setBusyId("");
     }
@@ -139,20 +291,25 @@ export default function UserBookingsPage() {
     if (!editModal) return;
     setBusyId(editModal.bookingId);
     setError("");
+
     try {
-      const payload = {
-        purpose: editModal.purpose || undefined,
-        startTime: editModal.startTime || undefined,
-        endTime: editModal.endTime || undefined,
-        expectedAttendees: editModal.expectedAttendees || undefined,
-      };
-      await updateBooking(editModal.bookingId, payload, auth?.token);
-      showSuccess("✓ Booking updated successfully");
+      await updateBooking(
+        editModal.bookingId,
+        {
+          purpose: editModal.purpose.trim() || undefined,
+          startTime: editModal.startTime ? normalizeDateTime(editModal.startTime) : undefined,
+          endTime: editModal.endTime ? normalizeDateTime(editModal.endTime) : undefined,
+          expectedAttendees: editModal.expectedAttendees ? Number(editModal.expectedAttendees) : undefined,
+        },
+        auth?.token
+      );
+
+      showSuccess("Booking updated successfully.");
       setEditModal(null);
       if (selectedBooking?.id === editModal.bookingId) setSelectedBooking(null);
-      setTimeout(() => loadBookings(), 600);
+      await loadBookings();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to update booking.");
     } finally {
       setBusyId("");
     }
@@ -160,649 +317,468 @@ export default function UserBookingsPage() {
 
   async function handleDeleteBooking(bookingId) {
     if (!window.confirm("Delete this booking? This cannot be undone.")) return;
+
     setBusyId(bookingId);
     setError("");
     try {
       await deleteBooking(bookingId, auth?.token);
-      showSuccess("✓ Booking deleted");
       if (selectedBooking?.id === bookingId) setSelectedBooking(null);
-      setTimeout(() => loadBookings(), 600);
+      showSuccess("Booking deleted.");
+      await loadBookings();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to delete booking.");
     } finally {
       setBusyId("");
     }
   }
 
   async function handleCancelBooking(bookingId) {
-    if (!window.confirm("Cancel this booking?")) return;
+    if (!window.confirm("Cancel this approved booking?")) return;
+
     setBusyId(bookingId);
     setError("");
     try {
       await cancelBooking(bookingId, auth?.token);
-      showSuccess("✓ Booking cancelled");
       if (selectedBooking?.id === bookingId) setSelectedBooking(null);
-      setTimeout(() => loadBookings(), 600);
+      showSuccess("Booking cancelled.");
+      await loadBookings();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to cancel booking.");
     } finally {
       setBusyId("");
     }
   }
 
+  function clearFilters() {
+    setFilterStatus("ALL");
+    setFilterType("ALL");
+    setFilterLocation("");
+    setFilterStartDate("");
+    setFilterEndDate("");
+  }
+
   return (
-    <section className="card">
-      <h1>My Bookings</h1>
-      <p className="muted">Create and manage your resource booking requests</p>
+    <FullBleedShell>
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow="Student workspace"
+          title="My bookings"
+          description="Create resource requests, track approval status, and open QR-ready bookings when they have been approved."
+          actions={
+            <>
+              <button className={buttonStyles.primary} onClick={() => setCreateModal({ ...emptyCreateForm })}>
+                + New booking
+              </button>
+              <button className={buttonStyles.secondary} onClick={loadBookings}>
+                Refresh
+              </button>
+            </>
+          }
+          aside={
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-zinc-900 dark:text-white">What you can do here</p>
+              <ul className="space-y-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                <li>• Submit a new booking request with a purpose and expected attendees.</li>
+                <li>• Update or delete pending requests before review.</li>
+                <li>• Open approved bookings to access their QR code for check-in.</li>
+              </ul>
+            </div>
+          }
+        />
 
-      {error && <p className="alert">{error}</p>}
-      {successMessage && <p className="success">{successMessage}</p>}
+        {error ? <Alert tone="error">{error}</Alert> : null}
+        {successMessage ? <Alert tone="success">{successMessage}</Alert> : null}
 
-      <div style={{ marginBottom: "1rem" }}>
-        <button
-          onClick={() => setCreateModal({ resourceId: "", startTime: "", endTime: "", purpose: "", expectedAttendees: null })}
-          className="primary-btn"
-          style={{ width: "auto" }}
+        <StatGrid items={stats} />
+
+        <SectionCard
+          title="Filter bookings"
+          description="Use status, resource type, location, or date range to narrow the list. Server-side filtering is used for resource details, and quick status/date filtering stays local."
+          actions={
+            <>
+              {/* <button className={buttonStyles.secondary} onClick={loadBookings}>
+                Apply filters
+              </button> */}
+              <button className={buttonStyles.ghost} onClick={clearFilters}>
+                Clear filters
+              </button>
+            </>
+          }
         >
-          + New Booking
-        </button>
-      </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Status</label>
+              <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className={fieldClass}>
+                <option value="ALL">All statuses</option>
+                {BOOKING_STATUSES.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+            </div>
 
-      {/* Filters */}
-      <div className="bookings-filter-panel">
-        <div className="filter-row">
-          <div className="filter-group">
-            <label>Status</label>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="form-input filter-input">
-              <option value="ALL">All Statuses</option>
-              {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Resource type</label>
+              <select value={filterType} onChange={(event) => setFilterType(event.target.value)} className={fieldClass}>
+                <option value="ALL">All types</option>
+                {RESOURCE_TYPES.map((type) => (
+                  <option key={type} value={type}>{type.replace(/_/g, " ")}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Location</label>
+              <input
+                type="text"
+                value={filterLocation}
+                onChange={(event) => setFilterLocation(event.target.value)}
+                placeholder="e.g. Building A"
+                className={fieldClass}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Start date</label>
+              <input type="date" value={filterStartDate} onChange={(event) => setFilterStartDate(event.target.value)} className={fieldClass} />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">End date</label>
+              <input type="date" value={filterEndDate} onChange={(event) => setFilterEndDate(event.target.value)} className={fieldClass} />
+            </div>
           </div>
-          <div className="filter-group">
-            <label>Resource Type</label>
-            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="form-input filter-input">
-              <option value="ALL">All Types</option>
-              {RESOURCE_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
-            </select>
-          </div>
-          <div className="filter-group">
-            <label>Location</label>
-            <input
-              type="text"
-              value={filterLocation}
-              onChange={(e) => setFilterLocation(e.target.value)}
-              placeholder="e.g. Building A"
-              className="form-input filter-input"
+        </SectionCard>
+
+        <SectionCard
+          title="Booking requests"
+          description="Review the latest status of your requests and open the booking details drawer for a complete timeline."
+        >
+          {loading ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="h-40 animate-pulse rounded-2xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800" />
+              ))}
+            </div>
+          ) : displayBookings.length === 0 ? (
+            <EmptyState
+              icon="📅"
+              title="No bookings found"
+              description="Try adjusting the filters or create your first booking request."
+              action={
+                <button className={buttonStyles.primary} onClick={() => setCreateModal({ ...emptyCreateForm })}>
+                  Create booking
+                </button>
+              }
             />
-          </div>
-        </div>
-        <div className="filter-row">
-          <div className="filter-group">
-            <label>Start Date (from)</label>
-            <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="form-input filter-input" />
-          </div>
-          <div className="filter-group">
-            <label>End Date (to)</label>
-            <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="form-input filter-input" />
-          </div>
-          <div className="filter-group filter-actions">
-            <button onClick={loadBookings} className="primary-btn filter-btn">Apply</button>
-            <button
-              onClick={() => { setFilterStatus("ALL"); setFilterType("ALL"); setFilterLocation(""); setFilterStartDate(""); setFilterEndDate(""); }}
-              className="ghost-btn filter-btn"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {loading && <p className="muted">Loading bookings...</p>}
-
-      {!loading && displayBookings.length === 0 && (
-        <p className="success">✓ No bookings found.</p>
-      )}
-
-      {!loading && displayBookings.length > 0 && (
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Resource</th>
-                <th>Date & Time</th>
-                <th>Purpose</th>
-                <th>Attendees</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          ) : (
+            <DataTable columns={["Resource", "Date & time", "Purpose", "Attendees", "Status", "Actions"]}>
               {displayBookings.map((booking) => {
-                const sc = statusColor(booking.status);
-                const isBusy = busyId === booking.id;
-                const isPending = booking.status === "PENDING";
-                const isApproved = booking.status === "APPROVED";
+                const busy = busyId === booking.id;
                 return (
-                  <tr key={booking.id}>
-                    <td>
+                  <tr key={booking.id} className="align-top">
+                    <td className="px-4 py-4">
                       <button
-                        className="ticket-title-btn"
+                        type="button"
                         onClick={() => setSelectedBooking(booking)}
+                        className="text-left text-sm font-semibold text-sky-700 transition hover:text-sky-600 dark:text-sky-300"
                       >
-                        {booking.resourceName || booking.resourceId}
+                        {/* {booking.resourceName || booking.resourceId} */}
+                        {getResolvedResourceName(booking)}
                       </button>
+                      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">ID: {booking.id}</p>
                     </td>
-                    <td style={{ fontSize: "0.85rem" }}>
-                      {formatDate(booking.startTime)} - {formatDate(booking.endTime)}
+                    <td className="px-4 py-4 text-sm text-zinc-600 dark:text-zinc-300">
+                      <div>{formatDateTime(booking.startTime)}</div>
+                      <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">to {formatDateTime(booking.endTime)}</div>
                     </td>
-                    <td style={{ fontSize: "0.85rem", maxWidth: "200px" }}>
-                      {booking.purpose}
+                    <td className="px-4 py-4 text-sm text-zinc-600 dark:text-zinc-300">
+                      <p className="max-w-xs whitespace-pre-wrap">{booking.purpose || "—"}</p>
+                      {booking.adminReason ? (
+                        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Admin note: {booking.adminReason}</p>
+                      ) : null}
                     </td>
-                    <td style={{ fontSize: "0.85rem" }}>
-                      {booking.expectedAttendees || "—"}
+                    <td className="px-4 py-4 text-sm text-zinc-600 dark:text-zinc-300">{booking.expectedAttendees || "—"}</td>
+                    <td className="px-4 py-4">
+                      <Badge tone={bookingTone(booking.status)}>{booking.status}</Badge>
                     </td>
-                    <td>
-                      <span
-                        className="badge"
-                        style={{ backgroundColor: sc.bg, color: sc.color }}
-                      >
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td className="actions-cell">
-                      {isPending && (
-                        <>
-                          <button
-                            onClick={() => setEditModal({
-                              bookingId: booking.id,
-                              purpose: booking.purpose,
-                              startTime: booking.startTime,
-                              endTime: booking.endTime,
-                              expectedAttendees: booking.expectedAttendees,
-                            })}
-                            disabled={isBusy || busyId !== ""}
-                            className="secondary-btn action-btn"
-                          >
-                            Edit
+                    <td className="px-4 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        {canEdit(booking.status) ? (
+                          <>
+                            <button className={buttonStyles.secondary} disabled={busy || !!busyId} onClick={() => setEditModal(buildEditState(booking))}>
+                              Edit
+                            </button>
+                            <button className={buttonStyles.danger} disabled={busy || !!busyId} onClick={() => handleDeleteBooking(booking.id)}>
+                              Delete
+                            </button>
+                          </>
+                        ) : null}
+                        {canViewQr(booking.status) ? (
+                          <>
+                            <button className={buttonStyles.primary} onClick={() => navigate(`/bookings/${booking.id}`)}>
+                              View QR
+                            </button>
+                            <button className={buttonStyles.danger} disabled={busy || !!busyId} onClick={() => handleCancelBooking(booking.id)}>
+                              Cancel
+                            </button>
+                          </>
+                        ) : null}
+                        {!canEdit(booking.status) && !canViewQr(booking.status) ? (
+                          <button className={buttonStyles.ghost} onClick={() => setSelectedBooking(booking)}>
+                            View details
                           </button>
-                          <button
-                            onClick={() => handleDeleteBooking(booking.id)}
-                            disabled={isBusy || busyId !== ""}
-                            className="danger-btn action-btn"
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                      {isApproved && (
-                        <>
-                          <button
-                            onClick={() => navigate(`/bookings/${booking.id}`)}
-                            className="primary-btn action-btn"
-                          >
-                            View QR
-                          </button>
-                          <button
-                            onClick={() => handleCancelBooking(booking.id)}
-                            disabled={isBusy || busyId !== ""}
-                            className="danger-btn action-btn"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      )}
-                      {booking.adminReason && (
-                        <div className="muted" style={{ fontSize: "0.75rem", marginTop: "0.3rem" }}>
-                          <strong>Reason:</strong> {booking.adminReason}
-                        </div>
-                      )}
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </DataTable>
+          )}
+        </SectionCard>
+      </div>
 
-      {/* Booking Detail Panel */}
-      {selectedBooking && (
-        <div className="modal-overlay" onClick={() => setSelectedBooking(null)}>
-          <div className="modal-content detail-panel" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <h2 style={{ margin: 0 }}>{selectedBooking.resourceName || selectedBooking.resourceId}</h2>
-              <button className="ghost-btn" style={{ padding: "0.3rem 0.6rem", width: "auto" }} onClick={() => setSelectedBooking(null)}>✕</button>
+      <Modal
+        open={!!selectedBooking}
+        onClose={() => setSelectedBooking(null)}
+        // title={selectedBooking ? selectedBooking.resourceName || selectedBooking.resourceId : "Booking details"}
+        title={selectedBooking ? getResolvedResourceName(selectedBooking) : "Booking details"}
+        description="Review the booking lifecycle, schedule, and any notes from admins."
+        width="max-w-4xl"
+      >
+        {selectedBooking ? (
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge tone={bookingTone(selectedBooking.status)}>{selectedBooking.status}</Badge>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">Booking #{selectedBooking.id}</span>
             </div>
 
-            <div className="detail-grid">
-              <div className="detail-row">
-                <span className="detail-label">Status</span>
-                <span className="badge" style={{ backgroundColor: statusColor(selectedBooking.status).bg, color: statusColor(selectedBooking.status).color }}>
-                  {selectedBooking.status}
-                </span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Purpose</span>
-                <span>{selectedBooking.purpose}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Start Time</span>
-                <span>{formatDate(selectedBooking.startTime)}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">End Time</span>
-                <span>{formatDate(selectedBooking.endTime)}</span>
-              </div>
-              {selectedBooking.expectedAttendees && (
-                <div className="detail-row">
-                  <span className="detail-label">Expected Attendees</span>
-                  <span>{selectedBooking.expectedAttendees}</span>
-                </div>
-              )}
-              <div className="detail-row">
-                <span className="detail-label">Created</span>
-                <span>{formatDate(selectedBooking.createdAt)}</span>
-              </div>
-              {selectedBooking.approvedAt && (
-                <div className="detail-row">
-                  <span className="detail-label">Approved</span>
-                  <span>{formatDate(selectedBooking.approvedAt)}</span>
-                </div>
-              )}
-              {selectedBooking.adminReason && (
-                <div className="detail-row">
-                  <span className="detail-label">Admin Reason</span>
-                  <span>{selectedBooking.adminReason}</span>
-                </div>
-              )}
-            </div>
+            <InfoList
+              items={[
+                { label: "Purpose", value: selectedBooking.purpose || "—" },
+                { label: "Start time", value: formatDateTime(selectedBooking.startTime) },
+                { label: "End time", value: formatDateTime(selectedBooking.endTime) },
+                { label: "Expected attendees", value: selectedBooking.expectedAttendees || "—" },
+                { label: "Created", value: formatDateTime(selectedBooking.createdAt) },
+                { label: "Approved", value: selectedBooking.approvedAt ? formatDateTime(selectedBooking.approvedAt) : "—" },
+                { label: "Admin reason", value: selectedBooking.adminReason || "—" },
+              ]}
+            />
 
-            <div style={{ display: "flex", gap: "0.5rem", marginTop: "1.25rem", flexWrap: "wrap" }}>
-              {selectedBooking.status === "PENDING" && (
+            <div className="flex flex-wrap gap-3">
+              {selectedBooking.status === "PENDING" ? (
                 <>
                   <button
-                    onClick={() => { setSelectedBooking(null); setEditModal({ bookingId: selectedBooking.id, purpose: selectedBooking.purpose, startTime: selectedBooking.startTime, endTime: selectedBooking.endTime, expectedAttendees: selectedBooking.expectedAttendees }); }}
-                    className="secondary-btn"
-                    style={{ width: "auto", padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
+                    className={buttonStyles.secondary}
+                    onClick={() => {
+                      setSelectedBooking(null);
+                      setEditModal(buildEditState(selectedBooking));
+                    }}
                   >
-                    Edit
+                    Edit booking
                   </button>
                   <button
-                    onClick={() => { setSelectedBooking(null); handleDeleteBooking(selectedBooking.id); }}
-                    className="danger-btn"
-                    style={{ width: "auto", padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
+                    className={buttonStyles.danger}
+                    onClick={() => {
+                      const id = selectedBooking.id;
+                      setSelectedBooking(null);
+                      handleDeleteBooking(id);
+                    }}
                   >
-                    Delete
+                    Delete booking
                   </button>
                 </>
-              )}
-              {selectedBooking.status === "APPROVED" && (
-                <button
-                  onClick={() => { setSelectedBooking(null); handleCancelBooking(selectedBooking.id); }}
-                  className="danger-btn"
-                  style={{ width: "auto", padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
-                >
-                  Cancel Booking
-                </button>
-              )}
+              ) : null}
+
+              {selectedBooking.status === "APPROVED" ? (
+                <>
+                  <button className={buttonStyles.primary} onClick={() => navigate(`/bookings/${selectedBooking.id}`)}>
+                    Open QR view
+                  </button>
+                  <button
+                    className={buttonStyles.danger}
+                    onClick={() => {
+                      const id = selectedBooking.id;
+                      setSelectedBooking(null);
+                      handleCancelBooking(id);
+                    }}
+                  >
+                    Cancel booking
+                  </button>
+                </>
+              ) : null}
             </div>
           </div>
-        </div>
-      )}
+        ) : null}
+      </Modal>
 
-      {/* Create Booking Modal */}
-      {createModal !== null && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Create New Booking</h2>
+      <Modal
+        open={!!createModal}
+        onClose={() => setCreateModal(null)}
+        title="Create booking"
+        description="Submit a new request for a campus resource."
+      >
+        {createModal ? (
+          <div className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
 
-            <form onSubmit={(e) => { e.preventDefault(); handleCreateBooking(); }}>
-              <div className="form-group">
-                <label htmlFor="resourceId">Resource ID *</label>
+              {/* <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Resource ID</label>
                 <input
-                  id="resourceId"
-                  type="text"
+                  className={fieldClass}
+                  placeholder="Enter resource ID"
                   value={createModal.resourceId}
-                  onChange={(e) => setCreateModal({ ...createModal, resourceId: e.target.value })}
-                  placeholder="Resource ID"
-                  className="form-input"
-                  required
+                  onChange={(event) => setCreateModal((prev) => ({ ...prev, resourceId: event.target.value }))}
                 />
+              </div> */}
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Resource
+                </label>
+
+                <select
+                  className={fieldClass}
+                  value={createModal.resourceId}
+                  onChange={(event) =>
+                    setCreateModal((prev) => ({ ...prev, resourceId: event.target.value }))
+                  }
+                  disabled={resourcesLoading}
+                >
+                  <option value="">
+                    {resourcesLoading ? "Loading resources..." : "Select a resource"}
+                  </option>
+
+                  {resources.map((resource) => (
+                    <option key={resource.id} value={String(resource.id)}>
+                      {resource.name}
+                    </option>
+                  ))}
+                </select>
+
+                {resourceLoadError ? (
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    {resourceLoadError}
+                  </p>
+                ) : null}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="startTime">Start Time *</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Expected attendees</label>
                 <input
-                  id="startTime"
-                  type="datetime-local"
-                  value={createModal.startTime ? new Date(createModal.startTime).toISOString().slice(0, 16) : ""}
-                  onChange={(e) => setCreateModal({ ...createModal, startTime: new Date(e.target.value).toISOString() })}
-                  className="form-input"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="endTime">End Time *</label>
-                <input
-                  id="endTime"
-                  type="datetime-local"
-                  value={createModal.endTime ? new Date(createModal.endTime).toISOString().slice(0, 16) : ""}
-                  onChange={(e) => setCreateModal({ ...createModal, endTime: new Date(e.target.value).toISOString() })}
-                  className="form-input"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="purpose">Purpose *</label>
-                <textarea
-                  id="purpose"
-                  value={createModal.purpose}
-                  onChange={(e) => setCreateModal({ ...createModal, purpose: e.target.value })}
-                  placeholder="Why are you booking this resource?"
-                  className="form-input"
-                  style={{ minHeight: "70px", width: "100%" }}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="expectedAttendees">Expected Attendees (optional)</label>
-                <input
-                  id="expectedAttendees"
                   type="number"
-                  value={createModal.expectedAttendees || ""}
-                  onChange={(e) => setCreateModal({ ...createModal, expectedAttendees: e.target.value ? parseInt(e.target.value) : null })}
-                  placeholder="Number of attendees"
-                  className="form-input"
                   min="1"
+                  className={fieldClass}
+                  placeholder="Optional"
+                  value={createModal.expectedAttendees}
+                  onChange={(event) => setCreateModal((prev) => ({ ...prev, expectedAttendees: event.target.value }))}
                 />
               </div>
+            </div>
 
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button
-                  type="submit"
-                  className="primary-btn"
-                  disabled={busyId !== ""}
-                  style={{ flex: 1, width: "auto" }}
-                >
-                  {busyId ? "Creating..." : "Create Booking"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreateModal(null)}
-                  className="ghost-btn"
-                  disabled={busyId !== ""}
-                  style={{ flex: 1, width: "auto" }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Booking Modal */}
-      {editModal !== null && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Update Booking (PENDING)</h2>
-
-            <form onSubmit={(e) => { e.preventDefault(); handleUpdateBooking(); }}>
-              <div className="form-group">
-                <label htmlFor="editPurpose">Purpose</label>
-                <textarea
-                  id="editPurpose"
-                  value={editModal.purpose}
-                  onChange={(e) => setEditModal({ ...editModal, purpose: e.target.value })}
-                  placeholder="Why are you booking this resource?"
-                  className="form-input"
-                  style={{ minHeight: "70px", width: "100%" }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="editStartTime">Start Time</label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Start time</label>
                 <input
-                  id="editStartTime"
                   type="datetime-local"
-                  value={editModal.startTime ? new Date(editModal.startTime).toISOString().slice(0, 16) : ""}
-                  onChange={(e) => setEditModal({ ...editModal, startTime: new Date(e.target.value).toISOString() })}
-                  className="form-input"
+                  className={fieldClass}
+                  value={createModal.startTime}
+                  onChange={(event) => setCreateModal((prev) => ({ ...prev, startTime: event.target.value }))}
                 />
               </div>
-
-              <div className="form-group">
-                <label htmlFor="editEndTime">End Time</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">End time</label>
                 <input
-                  id="editEndTime"
                   type="datetime-local"
-                  value={editModal.endTime ? new Date(editModal.endTime).toISOString().slice(0, 16) : ""}
-                  onChange={(e) => setEditModal({ ...editModal, endTime: new Date(e.target.value).toISOString() })}
-                  className="form-input"
+                  className={fieldClass}
+                  value={createModal.endTime}
+                  onChange={(event) => setCreateModal((prev) => ({ ...prev, endTime: event.target.value }))}
                 />
               </div>
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="editAttendees">Expected Attendees</label>
-                <input
-                  id="editAttendees"
-                  type="number"
-                  value={editModal.expectedAttendees || ""}
-                  onChange={(e) => setEditModal({ ...editModal, expectedAttendees: e.target.value ? parseInt(e.target.value) : null })}
-                  placeholder="Number of attendees"
-                  className="form-input"
-                  min="1"
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Purpose</label>
+              <textarea
+                className={textAreaClass}
+                placeholder="Describe why you need this booking"
+                value={createModal.purpose}
+                onChange={(event) => setCreateModal((prev) => ({ ...prev, purpose: event.target.value }))}
+              />
+            </div>
 
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button
-                  type="submit"
-                  className="primary-btn"
-                  disabled={busyId !== ""}
-                  style={{ flex: 1, width: "auto" }}
-                >
-                  {busyId ? "Updating..." : "Update Booking"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditModal(null)}
-                  className="ghost-btn"
-                  disabled={busyId !== ""}
-                  style={{ flex: 1, width: "auto" }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+            <div className="flex flex-wrap justify-end gap-3">
+              <button className={buttonStyles.ghost} onClick={() => setCreateModal(null)}>
+                Cancel
+              </button>
+              <button className={buttonStyles.primary} disabled={busyId === "create"} onClick={handleCreateBooking}>
+                {busyId === "create" ? "Creating…" : "Create booking"}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        ) : null}
+      </Modal>
 
-      <style>{`
-        .detail-grid {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          margin-top: 1rem;
-        }
+      <Modal
+        open={!!editModal}
+        onClose={() => setEditModal(null)}
+        title="Edit booking"
+        description="You can update pending requests before they are reviewed."
+      >
+        {editModal ? (
+          <div className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Start time</label>
+                <input
+                  type="datetime-local"
+                  className={fieldClass}
+                  value={editModal.startTime}
+                  onChange={(event) => setEditModal((prev) => ({ ...prev, startTime: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">End time</label>
+                <input
+                  type="datetime-local"
+                  className={fieldClass}
+                  value={editModal.endTime}
+                  onChange={(event) => setEditModal((prev) => ({ ...prev, endTime: event.target.value }))}
+                />
+              </div>
+            </div>
 
-        .detail-row {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-        }
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Expected attendees</label>
+              <input
+                type="number"
+                min="1"
+                className={fieldClass}
+                value={editModal.expectedAttendees}
+                onChange={(event) => setEditModal((prev) => ({ ...prev, expectedAttendees: event.target.value }))}
+              />
+            </div>
 
-        .detail-label {
-          font-weight: 600;
-          font-size: 0.85rem;
-          min-width: 110px;
-          color: #6b7280;
-        }
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Purpose</label>
+              <textarea
+                className={textAreaClass}
+                value={editModal.purpose}
+                onChange={(event) => setEditModal((prev) => ({ ...prev, purpose: event.target.value }))}
+              />
+            </div>
 
-        .badge {
-          display: inline-block;
-          padding: 0.2rem 0.6rem;
-          border-radius: 9999px;
-          font-size: 0.78rem;
-          font-weight: 600;
-          white-space: nowrap;
-        }
-
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-
-        .modal-content {
-          background: var(--panel, #fff8de);
-          border: 1px solid var(--border, #d7cdaa);
-          border-radius: 14px;
-          padding: 2rem;
-          max-width: 540px;
-          width: 90%;
-          box-shadow: 0 10px 30px rgba(48,35,8,0.15);
-          max-height: 90vh;
-          overflow-y: auto;
-          color: #2c2c2c;
-        }
-
-        .modal-content h2 {
-          margin-top: 0;
-          color: #1a1a1a;
-        }
-
-        .detail-panel {
-          max-width: 600px;
-        }
-
-        .form-group {
-          margin-bottom: 1rem;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-weight: 500;
-          color: #333333;
-        }
-
-        textarea, input[type="text"], input[type="number"], input[type="datetime-local"] {
-          padding: 0.6rem 0.7rem;
-          border: 1px solid #baa97e;
-          border-radius: 9px;
-          font-family: inherit;
-          background: #fff;
-          width: 100%;
-          box-sizing: border-box;
-          color: #2c2c2c;
-        }
-
-        textarea::placeholder, input::placeholder {
-          color: #999999;
-        }
-
-        .modal-content input,
-        .modal-content select {
-          padding: 0.6rem 0.7rem;
-          border: 1px solid #baa97e;
-          border-radius: 9px;
-          font-family: inherit;
-          background: #fff;
-          color: #2c2c2c;
-          width: 100%;
-          box-sizing: border-box;
-        }
-
-        .modal-content input::placeholder {
-          color: #999999;
-        }
-
-        .modal-content input:focus,
-        .modal-content select:focus,
-        .modal-content textarea:focus {
-          outline: 2px solid #6fa89f;
-          outline-offset: 1px;
-        }
-
-        .action-btn {
-          padding: 0.3rem 0.5rem !important;
-          font-size: 0.75rem !important;
-          width: auto !important;
-        }
-
-        .ticket-title-btn {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: var(--accent, #005c53);
-          font-weight: 600;
-          font-family: inherit;
-          font-size: 0.9rem;
-          text-align: left;
-          padding: 0;
-          text-decoration: underline;
-          text-underline-offset: 2px;
-        }
-
-        .ticket-title-btn:hover {
-          opacity: 0.8;
-        }
-
-        .bookings-filter-panel {
-          background: rgba(0,0,0,0.03);
-          border: 1px solid var(--border, #d7cdaa);
-          border-radius: 10px;
-          padding: 1rem 1.25rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .filter-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.75rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .filter-row:last-child { margin-bottom: 0; }
-
-        .filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.3rem;
-          flex: 1;
-          min-width: 130px;
-        }
-
-        .filter-group > label {
-          font-size: 0.82rem;
-          font-weight: 600;
-          color: #555;
-          margin-bottom: 0;
-        }
-
-        .filter-input { min-width: 130px; }
-
-        .filter-actions {
-          flex-direction: row !important;
-          align-items: flex-end;
-          gap: 0.5rem;
-        }
-
-        .filter-btn {
-          width: auto !important;
-          padding: 0.45rem 0.9rem !important;
-          font-size: 0.88rem !important;
-        }
-      `}</style>
-    </section>
+            <div className="flex flex-wrap justify-end gap-3">
+              <button className={buttonStyles.ghost} onClick={() => setEditModal(null)}>
+                Cancel
+              </button>
+              <button className={buttonStyles.primary} disabled={busyId === editModal.bookingId} onClick={handleUpdateBooking}>
+                {busyId === editModal.bookingId ? "Saving…" : "Save changes"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
+    </FullBleedShell>
   );
 }

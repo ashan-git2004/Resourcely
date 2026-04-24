@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
+import com.smartcampus.model.ResourceStatus;
+import java.util.Locale;
+
 /**
  * Service for managing campus resources.
  * 
@@ -273,4 +276,48 @@ public class ResourceService {
                 resource.getUpdatedAt()
         );
     }
+
+
+        /**
+     * User-facing resource list.
+     * Returns only ACTIVE and non-archived resources.
+     * Supports optional filtering by type, location, and minimum capacity.
+     */
+    public List<ResourceResponse> getAvailableResources(String type, String location, Integer minCapacity) {
+        return resourceRepository.findByArchivedFalse()
+                .stream()
+                .filter(resource -> resource.getStatus() == ResourceStatus.ACTIVE)
+                .filter(resource -> type == null || type.isBlank()
+                        || resource.getType().equalsIgnoreCase(type.trim()))
+                .filter(resource -> location == null || location.isBlank()
+                        || resource.getLocation().toLowerCase(Locale.ROOT)
+                                .contains(location.trim().toLowerCase(Locale.ROOT)))
+                .filter(resource -> minCapacity == null
+                        || resource.getCapacity() >= minCapacity)
+                .sorted((r1, r2) -> {
+                    int typeCompare = r1.getType().compareToIgnoreCase(r2.getType());
+                    return typeCompare != 0
+                            ? typeCompare
+                            : r1.getName().compareToIgnoreCase(r2.getName());
+                })
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * User-facing single resource lookup.
+     * Only ACTIVE and non-archived resources are visible to users.
+     */
+    public ResourceResponse getAvailableResourceById(String resourceId) {
+        Resource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found."));
+
+        if (resource.isArchived() || resource.getStatus() != ResourceStatus.ACTIVE) {
+            throw new ResourceNotFoundException("Resource not found.");
+        }
+
+        return toResponse(resource);
+    }
+
+
 }

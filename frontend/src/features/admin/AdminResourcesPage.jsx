@@ -1,17 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
+  createResource,
+  deleteResource,
   getAllResources,
-  getResourcesByType,
   getResourcesByLocation,
   getResourcesByStatus,
-  createResource,
-  updateResource,
-  deleteResource,
+  getResourcesByType,
   restoreResource,
+  updateResource,
   updateResourceStatus,
 } from "./resourceService";
 import { useAuth } from "../../context/AuthContext";
 import ResourceForm from "./ResourceForm";
+import {
+  AlertMessage,
+  Badge,
+  buttonClasses,
+  EmptyState,
+  formatEnum,
+  getBadgeTone,
+  inputClasses,
+  FullBleedShell,
+  PageHeader,
+  Panel,
+  SectionHeading,
+  StatCard,
+  TableShell,
+} from "./AdminUi";
+
+const resourceTypes = [
+  "LECTURE_HALL",
+  "LAB",
+  "MEETING_ROOM",
+  "EQUIPMENT",
+  "LIBRARY",
+  "COMPUTER_LAB",
+  "AUDITORIUM",
+  "SEMINAR_ROOM",
+  "PARKING",
+  "SPORTS_FACILITY",
+];
+
+const resourceStatuses = ["ACTIVE", "OUT_OF_SERVICE"];
 
 export default function AdminResourcesPage() {
   const { auth } = useAuth();
@@ -23,34 +54,16 @@ export default function AdminResourcesPage() {
   const [editingResource, setEditingResource] = useState(null);
   const [busyResourceId, setBusyResourceId] = useState("");
 
-  // Filter states
   const [filterType, setFilterType] = useState("ALL");
   const [filterLocation, setFilterLocation] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterCapacity, setFilterCapacity] = useState("");
-
-  const resourceTypes = [
-    "LECTURE_HALL",
-    "LAB",
-    "MEETING_ROOM",
-    "EQUIPMENT",
-    "LIBRARY",
-    "COMPUTER_LAB",
-    "AUDITORIUM",
-    "SEMINAR_ROOM",
-    "PARKING",
-    "SPORTS_FACILITY",
-  ];
-
-  const resourceStatuses = ["ACTIVE", "OUT_OF_SERVICE"];
 
   async function loadResources() {
     setLoading(true);
     setError("");
     try {
       let data = [];
-
-      // Apply filters based on priority
       if (filterType !== "ALL") {
         data = await getResourcesByType(filterType, auth?.token);
       } else if (filterLocation !== "ALL") {
@@ -61,10 +74,9 @@ export default function AdminResourcesPage() {
         data = await getAllResources(auth?.token);
       }
 
-      // Apply capacity filter (client-side)
-      if (filterCapacity && data.length > 0) {
-        const minCapacity = parseInt(filterCapacity);
-        data = data.filter((resource) => resource.capacity && resource.capacity >= minCapacity);
+      if (filterCapacity) {
+        const minCapacity = parseInt(filterCapacity, 10);
+        data = (data || []).filter((resource) => resource.capacity && resource.capacity >= minCapacity);
       }
 
       setResources(data || []);
@@ -80,10 +92,16 @@ export default function AdminResourcesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterType, filterLocation, filterStatus, filterCapacity]);
 
-  // Get unique locations from all resources for filter dropdown
-  const getUniqueLocations = () => {
-    return [...new Set(resources.map((r) => r.location))].filter(Boolean).sort();
-  };
+  const uniqueLocations = useMemo(() => {
+    return [...new Set(resources.map((resource) => resource.location).filter(Boolean))].sort();
+  }, [resources]);
+
+  const stats = useMemo(() => {
+    const activeCount = resources.filter((resource) => resource.status === "ACTIVE" && !resource.archived).length;
+    const disabledCount = resources.filter((resource) => resource.status === "OUT_OF_SERVICE" && !resource.archived).length;
+    const archivedCount = resources.filter((resource) => resource.archived).length;
+    return { activeCount, disabledCount, archivedCount };
+  }, [resources]);
 
   async function handleCreateResource(payload) {
     setBusyResourceId("create");
@@ -91,9 +109,9 @@ export default function AdminResourcesPage() {
     setSuccessMessage("");
     try {
       await createResource(payload, auth?.token);
-      setSuccessMessage(`✓ Resource "${payload.name}" created successfully`);
+      setSuccessMessage(`Resource \"${payload.name}\" created successfully.`);
       setShowForm(false);
-      setTimeout(() => loadResources(), 800);
+      setTimeout(() => loadResources(), 400);
     } catch (submitError) {
       setError(submitError.message);
     } finally {
@@ -102,15 +120,15 @@ export default function AdminResourcesPage() {
   }
 
   async function handleUpdateResource(payload) {
-    setBusyResourceId(editingResource.id);
+    setBusyResourceId(editingResource?.id || "");
     setError("");
     setSuccessMessage("");
     try {
       await updateResource(editingResource.id, payload, auth?.token);
-      setSuccessMessage(`✓ Resource "${payload.name}" updated successfully`);
+      setSuccessMessage(`Resource \"${payload.name}\" updated successfully.`);
       setEditingResource(null);
       setShowForm(false);
-      setTimeout(() => loadResources(), 800);
+      setTimeout(() => loadResources(), 400);
     } catch (submitError) {
       setError(submitError.message);
     } finally {
@@ -119,17 +137,14 @@ export default function AdminResourcesPage() {
   }
 
   async function handleDeleteResource(resource) {
-    if (!window.confirm(`Delete "${resource.name}"? This action will archive the resource.`)) {
-      return;
-    }
-
+    if (!window.confirm(`Archive \"${resource.name}\"?`)) return;
     setBusyResourceId(resource.id);
     setError("");
     setSuccessMessage("");
     try {
       await deleteResource(resource.id, auth?.token);
-      setSuccessMessage(`✓ Resource "${resource.name}" archived`);
-      setTimeout(() => loadResources(), 800);
+      setSuccessMessage(`Resource \"${resource.name}\" archived.`);
+      setTimeout(() => loadResources(), 400);
     } catch (deleteError) {
       setError(deleteError.message);
     } finally {
@@ -138,17 +153,14 @@ export default function AdminResourcesPage() {
   }
 
   async function handleRestoreResource(resource) {
-    if (!window.confirm(`Restore "${resource.name}"?`)) {
-      return;
-    }
-
+    if (!window.confirm(`Restore \"${resource.name}\"?`)) return;
     setBusyResourceId(resource.id);
     setError("");
     setSuccessMessage("");
     try {
       await restoreResource(resource.id, auth?.token);
-      setSuccessMessage(`✓ Resource "${resource.name}" restored`);
-      setTimeout(() => loadResources(), 800);
+      setSuccessMessage(`Resource \"${resource.name}\" restored.`);
+      setTimeout(() => loadResources(), 400);
     } catch (restoreError) {
       setError(restoreError.message);
     } finally {
@@ -157,17 +169,14 @@ export default function AdminResourcesPage() {
   }
 
   async function handleStatusToggle(resource) {
-    const newStatus = resource.status === "ACTIVE" ? "OUT_OF_SERVICE" : "ACTIVE";
-
+    const nextStatus = resource.status === "ACTIVE" ? "OUT_OF_SERVICE" : "ACTIVE";
     setBusyResourceId(resource.id);
     setError("");
     setSuccessMessage("");
     try {
-      await updateResourceStatus(resource.id, newStatus, auth?.token);
-      setSuccessMessage(
-        `✓ Resource "${resource.name}" status changed to ${newStatus.replace(/_/g, " ")}`
-      );
-      setTimeout(() => loadResources(), 800);
+      await updateResourceStatus(resource.id, nextStatus, auth?.token);
+      setSuccessMessage(`Resource \"${resource.name}\" changed to ${formatEnum(nextStatus)}.`);
+      setTimeout(() => loadResources(), 400);
     } catch (statusError) {
       setError(statusError.message);
     } finally {
@@ -175,315 +184,210 @@ export default function AdminResourcesPage() {
     }
   }
 
-  function handleEditResource(resource) {
-    setEditingResource(resource);
-    setShowForm(true);
-  }
-
-  function handleCloseForm() {
-    setShowForm(false);
-    setEditingResource(null);
-    setError("");
+  function resetFilters() {
+    setFilterType("ALL");
+    setFilterLocation("ALL");
+    setFilterStatus("ALL");
+    setFilterCapacity("");
   }
 
   if (showForm) {
     return (
-      <section className="card">
-        <h1>{editingResource ? "Edit Resource" : "Create New Resource"}</h1>
-        {error && <p className="alert">{error}</p>}
-        <ResourceForm
-          resource={editingResource}
-          onSubmit={editingResource ? handleUpdateResource : handleCreateResource}
-          onCancel={handleCloseForm}
-        />
-      </section>
+      <FullBleedShell>
+        <div className="space-y-6">
+          <PageHeader
+            eyebrow="Admin workspace"
+            title={editingResource ? `Edit ${editingResource.name}` : "Create resource"}
+            description="Add a new campus asset or update the configuration of an existing one."
+            actions={
+              <button type="button" onClick={() => { setShowForm(false); setEditingResource(null); }} className={buttonClasses("secondary")}>
+                Back to resources
+              </button>
+            }
+          />
+
+          {error ? <AlertMessage type="error">{error}</AlertMessage> : null}
+
+          <Panel>
+            <ResourceForm
+              resource={editingResource}
+              onSubmit={editingResource ? handleUpdateResource : handleCreateResource}
+              onCancel={() => {
+                setShowForm(false);
+                setEditingResource(null);
+                setError("");
+              }}
+            />
+          </Panel>
+        </div>
+      </FullBleedShell>
     );
   }
 
   return (
-    <section className="card">
-      <h1>Resource Management</h1>
-      <p className="muted">Create and manage bookable campus resources</p>
+    <FullBleedShell>
+      <div className="space-y-6">
+        <PageHeader
+          // eyebrow="Admin workspace"
+          title="Resource management"
+          description="Create, update, archive, and monitor bookable campus resources from one place."
+          actions={
+            <button type="button" onClick={() => setShowForm(true)} className={buttonClasses("primary")} disabled={busyResourceId !== ""}>
+              + Create resource
+            </button>
+          }
+        />
 
-      {error && <p className="alert">{error}</p>}
-      {successMessage && <p className="success">{successMessage}</p>}
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard label="Visible resources" value={String(resources.filter((resource) => !resource.archived).length).padStart(2, "0")} helper="Current filtered set" icon="🏫" />
+          <StatCard label="Active" value={String(stats.activeCount).padStart(2, "0")} helper="Bookable now" icon="🟢" />
+          <StatCard label="Archived / disabled" value={String(stats.archivedCount + stats.disabledCount).padStart(2, "0")} helper="Needs attention" icon="🛠️" />
+        </div>
 
-      <div className="resource-controls">
-        <div className="filters-grid">
-          <div className="filter-group">
-            <label htmlFor="typeFilter">Type:</label>
-            <select
-              id="typeFilter"
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="form-input"
-            >
-              <option value="ALL">All Types</option>
-              {resourceTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+        {error ? <AlertMessage type="error">{error}</AlertMessage> : null}
+        {successMessage ? <AlertMessage type="success">{successMessage}</AlertMessage> : null}
+
+        <Panel className="space-y-6">
+          <SectionHeading
+            title="Filter resources"
+            description="Refine by type, location, status, or minimum capacity."
+            action={
+              <button type="button" className={buttonClasses("ghost")} onClick={resetFilters}>
+                Reset filters
+              </button>
+            }
+          />
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="space-y-2">
+              <label htmlFor="typeFilter" className="text-sm font-medium text-foreground">Type</label>
+              <select id="typeFilter" value={filterType} onChange={(event) => setFilterType(event.target.value)} className={inputClasses()}>
+                <option value="ALL">All types</option>
+                {resourceTypes.map((type) => (
+                  <option key={type} value={type}>{formatEnum(type)}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="locationFilter" className="text-sm font-medium text-foreground">Location</label>
+              <select id="locationFilter" value={filterLocation} onChange={(event) => setFilterLocation(event.target.value)} className={inputClasses()}>
+                <option value="ALL">All locations</option>
+                {uniqueLocations.map((location) => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="statusFilter" className="text-sm font-medium text-foreground">Status</label>
+              <select id="statusFilter" value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className={inputClasses()}>
+                <option value="ALL">All statuses</option>
+                {resourceStatuses.map((status) => (
+                  <option key={status} value={status}>{formatEnum(status)}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="capacityFilter" className="text-sm font-medium text-foreground">Minimum capacity</label>
+              <input
+                id="capacityFilter"
+                type="number"
+                min="1"
+                value={filterCapacity}
+                onChange={(event) => setFilterCapacity(event.target.value)}
+                placeholder="e.g. 50"
+                className={inputClasses()}
+              />
+            </div>
           </div>
+        </Panel>
 
-          <div className="filter-group">
-            <label htmlFor="locationFilter">Location:</label>
-            <select
-              id="locationFilter"
-              value={filterLocation}
-              onChange={(e) => setFilterLocation(e.target.value)}
-              className="form-input"
-            >
-              <option value="ALL">All Locations</option>
-              {getUniqueLocations().map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </select>
-          </div>
+        <Panel className="space-y-6">
+          <SectionHeading
+            title="Resource inventory"
+            description="Use the table for fast scanning and jump into the detail page for deeper edits."
+          />
 
-          <div className="filter-group">
-            <label htmlFor="statusFilter">Status:</label>
-            <select
-              id="statusFilter"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="form-input"
-            >
-              <option value="ALL">All Statuses</option>
-              {resourceStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label htmlFor="capacityFilter">Min Capacity:</label>
-            <input
-              id="capacityFilter"
-              type="number"
-              min="1"
-              value={filterCapacity}
-              onChange={(e) => setFilterCapacity(e.target.value)}
-              placeholder="e.g., 50"
-              className="form-input"
+          {loading ? (
+            <div className="rounded-2xl border border-border bg-background px-4 py-10 text-center text-sm text-muted-foreground">
+              Loading resources...
+            </div>
+          ) : resources.length === 0 ? (
+            <EmptyState
+              title="No resources found"
+              description="Try widening your filters or create the first resource for this category."
+              action={
+                <button type="button" onClick={() => setShowForm(true)} className={buttonClasses("primary")}>
+                  Create resource
+                </button>
+              }
             />
-          </div>
-        </div>
-
-        <button
-          onClick={() => setShowForm(true)}
-          className="primary-btn"
-          disabled={busyResourceId !== ""}
-        >
-          + Create Resource
-        </button>
+          ) : (
+            <TableShell>
+              <table className="min-w-full divide-y divide-border text-sm">
+                <thead className="bg-muted/50 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">Resource</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Location</th>
+                    <th className="px-4 py-3">Capacity</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {resources.map((resource) => {
+                    const isBusy = busyResourceId === resource.id;
+                    return (
+                      <tr key={resource.id} className={resource.archived ? "bg-muted/20" : ""}>
+                        <td className="px-4 py-4 align-top">
+                          <div className="font-medium text-foreground">{resource.name}</div>
+                          {resource.description ? (
+                            <div className="mt-1 max-w-xs text-xs leading-5 text-muted-foreground">{resource.description}</div>
+                          ) : null}
+                          {resource.archived ? (
+                            <div className="mt-2"><Badge tone="border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300">Archived</Badge></div>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-4 text-foreground">{formatEnum(resource.type)}</td>
+                        <td className="px-4 py-4 text-foreground">{resource.location || "—"}</td>
+                        <td className="px-4 py-4 text-foreground">{resource.capacity || "—"}</td>
+                        <td className="px-4 py-4">
+                          <Badge tone={getBadgeTone("resource", resource.status)}>{formatEnum(resource.status)}</Badge>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            <Link to={`/admin/resources/${resource.id}`} className={buttonClasses("secondary")}>View</Link>
+                            {!resource.archived ? (
+                              <>
+                                <button type="button" onClick={() => { setEditingResource(resource); setShowForm(true); }} className={buttonClasses("secondary")} disabled={isBusy}>
+                                  {isBusy ? "Working..." : "Edit"}
+                                </button>
+                                <button type="button" onClick={() => handleStatusToggle(resource)} className={buttonClasses("ghost")} disabled={isBusy}>
+                                  {resource.status === "ACTIVE" ? "Disable" : "Enable"}
+                                </button>
+                                <button type="button" onClick={() => handleDeleteResource(resource)} className={buttonClasses("danger")} disabled={isBusy}>
+                                  Archive
+                                </button>
+                              </>
+                            ) : (
+                              <button type="button" onClick={() => handleRestoreResource(resource)} className={buttonClasses("primary")} disabled={isBusy}>
+                                Restore
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </TableShell>
+          )}
+        </Panel>
       </div>
-
-      {loading && <p className="muted">Loading resources...</p>}
-
-      {!loading && resources.length === 0 && (
-        <p className="success">✓ No resources found. Create your first resource to get started.</p>
-      )}
-
-      {!loading && resources.length > 0 && (
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Location</th>
-                <th>Capacity</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {resources.map((resource) => (
-                <tr key={resource.id} className={resource.archived ? "archived-row" : ""}>
-                  <td>
-                    <strong>{resource.name}</strong>
-                    {resource.description && (
-                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
-                        {resource.description}
-                      </div>
-                    )}
-                  </td>
-                  <td>{resource.type.replace(/_/g, " ")}</td>
-                  <td>{resource.location}</td>
-                  <td>{resource.capacity || "—"}</td>
-                  <td>
-                    <span
-                      style={{
-                        padding: "0.25rem 0.75rem",
-                        borderRadius: "4px",
-                        fontSize: "0.85rem",
-                        backgroundColor:
-                          resource.status === "ACTIVE"
-                            ? "#d4edda"
-                            : resource.status === "OUT_OF_SERVICE"
-                              ? "#fff3cd"
-                              : "#f8f9fa",
-                        color:
-                          resource.status === "ACTIVE"
-                            ? "#155724"
-                            : resource.status === "OUT_OF_SERVICE"
-                              ? "#856404"
-                              : "#495057",
-                      }}
-                    >
-                      {resource.status.replace(/_/g, " ")}
-                    </span>
-                  </td>
-                  <td className="actions-cell">
-                    {!resource.archived ? (
-                      <>
-                        <button
-                          onClick={() => handleEditResource(resource)}
-                          className="secondary-btn"
-                          disabled={busyResourceId === resource.id}
-                        >
-                          {busyResourceId === resource.id ? "..." : "Edit"}
-                        </button>
-
-                        <button
-                          onClick={() => handleStatusToggle(resource)}
-                          className="ghost-btn"
-                          disabled={busyResourceId === resource.id}
-                          title={
-                            resource.status === "ACTIVE"
-                              ? "Mark as Out of Service"
-                              : "Mark as Active"
-                          }
-                        >
-                          {resource.status === "ACTIVE" ? "Disable" : "Enable"}
-                        </button>
-
-                        <button
-                          onClick={() => handleDeleteResource(resource)}
-                          className="danger-btn"
-                          disabled={busyResourceId === resource.id}
-                        >
-                          Delete
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => handleRestoreResource(resource)}
-                        className="secondary-btn"
-                        disabled={busyResourceId === resource.id}
-                      >
-                        Restore
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <style>{`
-        .resource-controls {
-          display: flex;
-          gap: 1rem;
-          align-items: flex-end;
-          margin-bottom: 2rem;
-          flex-wrap: wrap;
-        }
-
-        .filters-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-          gap: 0.8rem;
-          flex: 1;
-        }
-
-        .filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.3rem;
-        }
-
-        .filter-group label {
-          font-weight: 500;
-          margin: 0;
-          font-size: 0.9rem;
-        }
-
-        .filter-group select,
-        .filter-group input {
-          width: 100%;
-        }
-
-        .availability-list {
-          margin: 1rem 0;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          padding: 1rem;
-        }
-
-        .availability-window {
-          padding: 1rem;
-          margin-bottom: 1rem;
-          background-color: #f8f9fa;
-          border-radius: 4px;
-          border-left: 3px solid #0066cc;
-        }
-
-        .availability-window:last-child {
-          margin-bottom: 0;
-        }
-
-        .form-section {
-          margin: 2rem 0;
-          padding: 1rem 0;
-          border-top: 1px solid #e0e0e0;
-        }
-
-        .form-section h3 {
-          margin-top: 0;
-          margin-bottom: 0.5rem;
-        }
-
-        .form-actions {
-          display: flex;
-          gap: 1rem;
-          margin-top: 2rem;
-          padding-top: 1rem;
-          border-top: 1px solid #e0e0e0;
-        }
-
-        .archived-row {
-          opacity: 0.6;
-          background-color: #f5f5f5;
-        }
-
-        .danger-btn {
-          background-color: #f8d7da;
-          color: #721c24;
-          border: 1px solid #f5c6cb;
-          padding: 0.5rem 1rem;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .danger-btn:hover:not(:disabled) {
-          background-color: #f5c6cb;
-        }
-
-        .danger-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      `}</style>
-    </section>
+    </FullBleedShell>
   );
 }
