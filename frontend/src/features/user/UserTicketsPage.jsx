@@ -11,6 +11,9 @@ import {
   updateTicket,
   uploadAttachment,
 } from "./userTicketService";
+
+import { getSelectableResources } from "./resourceLookupService";
+
 import {
   Alert,
   Badge,
@@ -405,7 +408,7 @@ export default function UserTicketsPage() {
               {[
                 ["Category", selectedTicket.category],
                 ["Location", selectedTicket.location || "—"],
-                ["Resource ID", selectedTicket.resourceId || "—"],
+                ["Resource", selectedTicket.resourceName || selectedTicket.resourceId || "—"],
                 ["Preferred contact", selectedTicket.preferredContact || "—"],
                 ["Assigned technician", selectedTicket.technicianName || "—"],
                 ["Created", formatDate(selectedTicket.createdAt)],
@@ -578,6 +581,10 @@ function CreateTicketModal({ open, token, onCreated, onClose }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const [resources, setResources] = useState([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [resourcesError, setResourcesError] = useState("");
+
   useEffect(() => {
     if (!open) {
       setForm({
@@ -594,6 +601,38 @@ function CreateTicketModal({ open, token, onCreated, onClose }) {
       setBusy(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !token) return;
+
+    let cancelled = false;
+
+    async function loadResources() {
+      setResourcesLoading(true);
+      setResourcesError("");
+
+      try {
+        const data = await getSelectableResources(token);
+        if (!cancelled) {
+          setResources(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setResourcesError(error.message || "Failed to load resources.");
+        }
+      } finally {
+        if (!cancelled) {
+          setResourcesLoading(false);
+        }
+      }
+    }
+
+    loadResources();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, token]);
 
   function setField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -667,9 +706,33 @@ function CreateTicketModal({ open, token, onCreated, onClose }) {
             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Location</label>
             <input className={fieldClass} value={form.location} onChange={(event) => setField("location", event.target.value)} placeholder="Where is the issue?" />
           </div>
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Resource ID</label>
             <input className={fieldClass} value={form.resourceId} onChange={(event) => setField("resourceId", event.target.value)} placeholder="Optional resource reference" />
+          </div> */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Resource
+            </label>
+            <select
+              className={fieldClass}
+              value={form.resourceId}
+              onChange={(event) => setField("resourceId", event.target.value)}
+              disabled={resourcesLoading}
+            >
+              <option value="">
+                {resourcesLoading ? "Loading resources..." : "Select a resource (optional)"}
+              </option>
+              {resources.map((resource) => (
+                <option key={resource.id} value={String(resource.id)}>
+                  {resource.name}
+                </option>
+              ))}
+            </select>
+
+            {resourcesError ? (
+              <p className="text-sm text-red-600 dark:text-red-400">{resourcesError}</p>
+            ) : null}
           </div>
         </div>
 
@@ -706,6 +769,10 @@ function EditTicketModal({ open, token, ticket, onSaved, onClose }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const [resources, setResources] = useState([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [resourcesError, setResourcesError] = useState("");
+
   useEffect(() => {
     if (ticket && open) {
       setForm({
@@ -721,6 +788,38 @@ function EditTicketModal({ open, token, ticket, onSaved, onClose }) {
       setBusy(false);
     }
   }, [open, ticket]);
+
+  useEffect(() => {
+    if (!open || !token) return;
+
+    let cancelled = false;
+
+    async function loadResources() {
+      setResourcesLoading(true);
+      setResourcesError("");
+
+      try {
+        const data = await getSelectableResources(token);
+        if (!cancelled) {
+          setResources(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setResourcesError(error.message || "Failed to load resources.");
+        }
+      } finally {
+        if (!cancelled) {
+          setResourcesLoading(false);
+        }
+      }
+    }
+
+    loadResources();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, token]);
 
   function setField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -787,9 +886,33 @@ function EditTicketModal({ open, token, ticket, onSaved, onClose }) {
             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Location</label>
             <input className={fieldClass} value={form.location} onChange={(event) => setField("location", event.target.value)} />
           </div>
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Resource ID</label>
             <input className={fieldClass} value={form.resourceId} onChange={(event) => setField("resourceId", event.target.value)} />
+          </div> */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Resource
+            </label>
+            <select
+              className={fieldClass}
+              value={form.resourceId}
+              onChange={(event) => setField("resourceId", event.target.value)}
+              disabled={resourcesLoading}
+            >
+              <option value="">
+                {resourcesLoading ? "Loading resources..." : "Select a resource (optional)"}
+              </option>
+              {resources.map((resource) => (
+                <option key={resource.id} value={String(resource.id)}>
+                  {resource.name}
+                </option>
+              ))}
+            </select>
+
+            {resourcesError ? (
+              <p className="text-sm text-red-600 dark:text-red-400">{resourcesError}</p>
+            ) : null}
           </div>
         </div>
 

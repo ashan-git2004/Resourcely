@@ -176,11 +176,15 @@ export default function Navbar() {
                   </NavLink>
                 )}
 
-                {isAdmin && (
+                {/* {isAdmin && (
                   <NavLink to="/check-in" className={navLinkClasses}>
                     Check-In
                   </NavLink>
-                )}
+                )} */}
+
+                <NavLink to="/check-in" className={navLinkClasses}>
+                  Check-In
+                </NavLink>
 
 
                 {isUser && (

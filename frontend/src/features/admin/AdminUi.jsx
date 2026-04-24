@@ -54,6 +54,11 @@ export function getBadgeTone(kind, value) {
       LOCAL: "border-slate-500/20 bg-slate-500/10 text-slate-700 dark:text-slate-300",
       CREDENTIALS: "border-slate-500/20 bg-slate-500/10 text-slate-700 dark:text-slate-300",
     },
+    checkedIn: {
+      // Indigo makes it stand out from standard "Emerald" approvals
+      true: "border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
+      false: "border-slate-500/20 bg-slate-500/10 text-slate-700 dark:text-slate-300",
+    },
   };
 
   return (

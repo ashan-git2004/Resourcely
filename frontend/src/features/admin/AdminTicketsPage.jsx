@@ -291,7 +291,7 @@ export default function AdminTicketsPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 align-top text-muted-foreground">
-                          <span className="text-foreground">{ticket.reporterName || "—"}</span>
+                          <span className="text-foreground">{ticket.reporterId?.slice(0, 8) || "—"}</span>
                         </td>
                         <td className="px-4 py-3 align-top text-muted-foreground">
                           {formatEnum(ticket.category)}

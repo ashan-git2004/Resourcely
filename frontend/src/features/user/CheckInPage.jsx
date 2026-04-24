@@ -28,30 +28,120 @@ export default function CheckInPage() {
     }
   }
 
-  async function performCheckIn(bookingId, userId) {
+  // async function performCheckIn(bookingId, userId) {
+  //   try {
+  //     setLoading(true);
+  //     setError("");
+  //     const response = await fetch(`/api/technician/bookings/${bookingId}/check-in`, {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ userId }),
+  //     });
+  //     const result = await response.json();
+  //     console.log("Check-in response:", result);
+  //     if (!response.ok) throw new Error(result.message || "Check-in failed");
+
+  //     setCheckInResult({
+  //       success: true,
+  //       bookingId: result.bookingId,
+  //       resourceName: result.resourceName,
+  //       userId: result.userId,
+  //       checkedInAt: new Date(result.checkedInAt).toLocaleString(),
+  //     });
+  //   } catch (checkInError) {
+  //     setError(checkInError.message || "Failed to perform check-in");
+  //     setCheckInResult(null);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
+  async function handleQrCodeScanned(data) {
+    try {
+      const [type, bookingId, userId] = data.split(":");
+      if (type !== "BOOKING") {
+        setError("Invalid QR code. Please scan a valid booking QR code.");
+        return;
+      }
+
+      setScannedData({ bookingId, userId });
+      setShowScanner(false);
+      await performCheckIn(data);
+    } catch (scanError) {
+      setError(`Failed to parse QR code: ${scanError.message}`);
+    }
+  }
+
+  // async function performCheckIn(rawQrData) {
+  //   try {
+  //     setLoading(true);
+  //     setError("");
+
+  //     const response = await fetch("/api/user/bookings/verify-qr", {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ qrData: rawQrData }),
+  //     });
+
+  //     const result = await response.json();
+  //     if (!response.ok) throw new Error(result.message || "Check-in failed");
+
+  //     setCheckInResult({
+  //       success: true,
+  //       bookingId: result.id,
+  //       resourceName: result.resourceName,
+  //       userId: result.userId,
+  //       checkedInAt: new Date(result.checkedInAt).toLocaleString(),
+  //     });
+  //   } catch (err) {
+  //     setError(err.message || "Failed to perform check-in");
+  //     setCheckInResult(null);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
+  async function performCheckIn(rawQrData) {
     try {
       setLoading(true);
       setError("");
-      const response = await fetch(`/api/technician/bookings/${bookingId}/check-in`, {
+
+      console.log("Calling backend...");
+      console.log("URL:", "/api/user/bookings/verify-qr");
+      console.log("Payload:", { qrData: rawQrData });
+
+      const response = await fetch("/api/user/bookings/verify-qr", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ qrData: rawQrData }),
       });
+
+      console.log("HTTP status:", response.status);
+
       const result = await response.json();
+      console.log("Backend response body:", result);
+
       if (!response.ok) throw new Error(result.message || "Check-in failed");
 
       setCheckInResult({
         success: true,
-        bookingId: result.bookingId,
+        bookingId: result.id,
         resourceName: result.resourceName,
         userId: result.userId,
         checkedInAt: new Date(result.checkedInAt).toLocaleString(),
       });
-    } catch (checkInError) {
-      setError(checkInError.message || "Failed to perform check-in");
+    } catch (err) {
+      console.error("Check-in error:", err);
+      setError(err.message || "Failed to perform check-in");
       setCheckInResult(null);
     } finally {
       setLoading(false);

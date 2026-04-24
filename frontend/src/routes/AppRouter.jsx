@@ -18,7 +18,9 @@ import UserTicketsPage from "../features/user/UserTicketsPage";
 import BookingDetailsPage from "../features/user/BookingDetailsPage";
 import CheckInPage from "../features/user/CheckInPage";
 import HomePage from "../features/home/HomePage";
+
 import ProtectedRoute from "./ProtectedRoute";
+import PublicOnlyRoute from "./PublicOnlyRoute";
 
 function HomeGate() {
   const { isAuthenticated } = useAuth();
@@ -52,8 +54,12 @@ export default function AppRouter() {
       <main className="layout">
         <Routes>
           <Route path="/" element={<HomeGate />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+
+          <Route element={<PublicOnlyRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
+
           <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
           <Route
             path="/home"

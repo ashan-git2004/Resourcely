@@ -111,12 +111,21 @@ export default function AdminBookingsPage() {
     };
   }, [auth?.token, missingResourceIds]);
 
+  // Add this to log the bookings whenever the state changes
+  useEffect(() => {
+    console.log("Current Bookings Data:", bookings);
+  }, [bookings]);
+
   function getResolvedResourceName(booking) {
     return (
       booking.resourceName ||
       resourceNameMap[booking.resourceId] ||
       `Resource #${booking.resourceId}`
     );
+  }
+
+  function isLockedBooking(booking) {
+    return booking.checkedIn === true;
   }
 
   async function handleApprove(bookingId, reason) {
@@ -228,7 +237,7 @@ export default function AdminBookingsPage() {
           ) : (
             <TableShell>
               <table className="min-w-full divide-y divide-border text-sm">
-                <thead className="bg-muted/30 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                {/* <thead className="bg-muted/30 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
                   <tr>
                     <th className="px-4 py-3 font-semibold">User</th>
                     <th className="px-4 py-3 font-semibold">Resource</th>
@@ -237,12 +246,31 @@ export default function AdminBookingsPage() {
                     <th className="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 text-right font-semibold">Actions</th>
                   </tr>
+                </thead> */}
+                <thead className="bg-muted/30 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">User</th>
+                    <th className="px-4 py-3 font-semibold">Resource</th>
+                    <th className="px-4 py-3 font-semibold">Schedule</th>
+                    <th className="px-4 py-3 font-semibold">Purpose</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Attendees</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
+                    <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-border bg-card/20">
                   {bookings.map((booking) => {
                     const isBusy = busyBookingId === booking.id;
+                    const isCheckedIn = isLockedBooking(booking);
                     return (
-                      <tr key={booking.id} className="group transition-colors hover:bg-muted/50">
+                      // <tr key={booking.id} className="group transition-colors hover:bg-muted/50">
+                      <tr
+                        key={booking.id}
+                        className={[
+                          "group transition-colors hover:bg-muted/50",
+                          isCheckedIn ? "bg-emerald-50/60 dark:bg-emerald-950/20" : "",
+                        ].join(" ")}
+                      >
                         <td className="px-4 py-3 align-top">
                           <div className="text-sm font-medium text-foreground">{booking.userName}</div>
                           <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
@@ -266,44 +294,85 @@ export default function AdminBookingsPage() {
                             {booking.purpose || "—"}
                           </span>
                         </td>
+
                         <td className="whitespace-nowrap px-4 py-3 align-top">
-                          <Badge tone={getBadgeTone("booking", booking.status)}>{booking.status}</Badge>
+                          <span className="text-sm font-medium text-foreground">
+                            {booking.expectedAttendees ?? "—"}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 align-top">
+                          {isCheckedIn ? (
+                            // <Badge tone="emerald">Checked in</Badge>
+                            <Badge tone={getBadgeTone("checkedIn", true)}>Checked In</Badge>
+                          ) : (
+                            <Badge tone={getBadgeTone("booking", booking.status)}>
+                              {booking.status}
+                            </Badge>
+                          )}
                         </td>
                         <td className="px-4 py-3 align-top">
                           <div className="flex flex-wrap justify-end gap-1.5">
                             {booking.status === "PENDING" && (
                               <>
                                 {/* Approve Button - Soft Emerald */}
-                                <button
+                                {/* <button
                                   type="button"
                                   onClick={() => openActionModal(booking.id, "approve")}
                                   disabled={busyBookingId !== ""}
                                   className="inline-flex h-7 items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 text-[11px] font-bold text-emerald-700 transition-all hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
                                 >
                                   {isBusy ? "Checking..." : "✓ Approve"}
-                                </button>
-                                {/* Reject Button - Soft Red */}
+                                </button> */}
                                 <button
+                                  type="button"
+                                  onClick={() => openActionModal(booking.id, "approve")}
+                                  disabled={busyBookingId !== "" || isCheckedIn}
+                                  className="inline-flex h-7 items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 text-[11px] font-bold text-emerald-700 transition-all hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
+                                >
+                                  {isBusy ? "Checking..." : "✓ Approve"}
+                                </button>
+
+
+                                {/* Reject Button - Soft Red */}
+                                {/* <button
                                   type="button"
                                   onClick={() => openActionModal(booking.id, "reject")}
                                   disabled={busyBookingId !== ""}
                                   className="inline-flex h-7 items-center rounded-md border border-red-200 bg-red-50 px-2 text-[11px] font-bold text-red-700 transition-all hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
                                 >
                                   ✕ Reject
+                                </button> */}
+                                <button
+                                  type="button"
+                                  onClick={() => openActionModal(booking.id, "reject")}
+                                  disabled={busyBookingId !== "" || isCheckedIn}
+                                  className="inline-flex h-7 items-center rounded-md border border-red-200 bg-red-50 px-2 text-[11px] font-bold text-red-700 transition-all hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+                                >
+                                  ✕ Reject
                                 </button>
+
                               </>
                             )}
 
                             {booking.status === "APPROVED" && (
+                              // <button
+                              //   type="button"
+                              //   onClick={() => openActionModal(booking.id, "cancel")}
+                              //   disabled={busyBookingId !== ""}
+                              //   className="inline-flex h-7 items-center rounded-md border border-slate-200 bg-slate-50 px-2 text-[11px] font-bold text-slate-700 transition-all hover:bg-slate-100 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900/20 dark:text-slate-300"
+                              // >
+                              //   Cancel Booking
+                              // </button>
                               <button
                                 type="button"
                                 onClick={() => openActionModal(booking.id, "cancel")}
-                                disabled={busyBookingId !== ""}
-                                className="inline-flex h-7 items-center rounded-md border border-slate-200 bg-slate-50 px-2 text-[11px] font-bold text-slate-700 transition-all hover:bg-slate-100 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900/20 dark:text-slate-300"
+                                disabled={busyBookingId !== "" || isCheckedIn}
+                                className="inline-flex h-7 items-center rounded-md border border-slate-200 bg-slate-50 px-2 text-[11px] font-bold text-slate-700 transition-all hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900/20 dark:text-slate-300"
                               >
                                 Cancel Booking
                               </button>
                             )}
+
                           </div>
                           {booking.adminReason && (
                             <p className="mt-2 rounded bg-muted/50 p-2 text-[11px] leading-relaxed text-muted-foreground">

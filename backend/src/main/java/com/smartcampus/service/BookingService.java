@@ -336,9 +336,9 @@ public class BookingService {
             throw new BadRequestException("Only approved bookings can be checked in");
         }
 
-        if (!booking.getUserId().equals(userId)) {
-            throw new BadRequestException("You can only check in your own bookings");
-        }
+        // if (!booking.getUserId().equals(userId)) {
+        //     throw new BadRequestException("You can only check in your own bookings");
+        // }
 
         // Check if booking is within current time window (with 1 hour buffer before)
         Instant now = Instant.now();

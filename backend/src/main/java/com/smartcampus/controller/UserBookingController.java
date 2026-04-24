@@ -275,10 +275,10 @@ public class UserBookingController {
             QrCodeService.BookingVerificationData data = qrCodeService.verifyQrCode(request.getQrData());
             
             // Verify it's the user's booking
-            Booking booking = bookingService.getBooking(data.bookingId);
-            if (!booking.getUserId().equals(data.userId)) {
-                return ResponseEntity.badRequest().build();
-            }
+            // Booking booking = bookingService.getBooking(data.bookingId);
+            // if (!booking.getUserId().equals(data.userId)) {
+            //     return ResponseEntity.badRequest().build();
+            // }
             
             // Check in
             Booking checkedIn = bookingService.checkInBooking(data.bookingId, userId);
