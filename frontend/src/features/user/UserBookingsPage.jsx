@@ -543,6 +543,7 @@ export default function UserBookingsPage() {
         onClose={() => setSelectedBooking(null)}
         // title={selectedBooking ? selectedBooking.resourceName || selectedBooking.resourceId : "Booking details"}
         title={selectedBooking ? getResolvedResourceName(selectedBooking) : "Booking details"}
+        
         description="Review the booking lifecycle, schedule, and any notes from admins."
         width="max-w-4xl"
       >

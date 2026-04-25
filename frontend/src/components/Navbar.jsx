@@ -334,10 +334,20 @@ export default function Navbar() {
                     </NavLink>
                   )}
 
-                  {is}
+                  {/* {is}
                   <NavLink to="/dashboard/student/bookings" className={navLinkClasses}>
                     My Bookings
-                  </NavLink>
+                  </NavLink> */}
+                  {isUser && (
+                    <>
+                      <NavLink to="/dashboard/student/bookings" className={navLinkClasses}>
+                        My Bookings
+                      </NavLink>
+                      <NavLink to="/dashboard/student/tickets" className={navLinkClasses}>
+                        My Tickets
+                      </NavLink>
+                    </>
+                  )}
 
                   <div className="flex items-center gap-2 pt-2">
                     <button
